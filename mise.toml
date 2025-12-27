@@ -1,0 +1,9 @@
+[tools]
+go = "1.25.5"
+
+[env]
+_.path = ["./build"]
+
+[tasks.build]
+description = "Build the project"
+run = "go build -o build/rocket"
