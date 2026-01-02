@@ -3,7 +3,12 @@ go = "1.25.5"
 
 [env]
 _.path = ["./build"]
+CONTAINER_SSHKEY="{{env.HOME}}/.local/share/containers/podman/machine/machine"
 
 [tasks.build]
 description = "Build the project"
-run = "go build -o build/rocket"
+run = "go build -o build/rocket -tags=remote"
+
+[tasks.prod]
+description = "Build project for end user"
+run = "go build -o build/rocket -tags=remote -ldflags '-s -w'"

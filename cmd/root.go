@@ -3,9 +3,9 @@ package cmd
 import (
 	"ayayushsharma/rocket/constants"
 	"errors"
-	"log/slog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"log/slog"
 	"os"
 	"strings"
 )
@@ -65,9 +65,9 @@ func initializeConfig(cmd *cobra.Command) error {
 
 		viper.AddConfigPath(".")
 		viper.AddConfigPath(
-			configDir + "/" + 
-			constants.ApplicationName + "/" + 
-			constants.ApplicationName,
+			configDir + "/" +
+				constants.ApplicationName + "/" +
+				constants.ApplicationName,
 		)
 		viper.SetConfigName("config")
 		viper.SetConfigType("yaml")

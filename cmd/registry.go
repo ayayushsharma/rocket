@@ -8,20 +8,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var registerCmd = &cobra.Command{
-	Use:   "register",
-	Short: "registers specified containerised application",
+var registryCmd = &cobra.Command{
+	Use:   "registry",
+	Short: "registrys specified containerised application",
 
 	Run: func(cmd *cobra.Command, args []string) {
 		slog.Debug("Launching... " + constants.ApplicationName)
-		conn, err := containers.ConnectPodman()
+		_, err := containers.ConnectPodman()
 		if err != nil {
 
 		}
-		conn.PullImage("excalidraw/excalidraw:sha-4bfc5bb")
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(registerCmd)
+	rootCmd.AddCommand(registryCmd)
 }
+
