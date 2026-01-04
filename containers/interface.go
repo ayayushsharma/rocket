@@ -5,7 +5,7 @@ type Container interface {
 	RemoveImage(imageName string) error
 
 	CreateContainer(
-		options ContainerCreateOptions,
+		options ContainerConfig,
 	) error
 
 	StartService(containerName string) error

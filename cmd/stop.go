@@ -9,12 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var launchCmd = &cobra.Command{
-	Use:   "launch",
-	Short: "Launches specified application",
+var stopCmd = &cobra.Command{
+	Use:   "stop [container_name]",
+	Short: "Stops applications",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		slog.Debug("Launching... " + constants.ApplicationName)
+		slog.Debug("Stopping... " + constants.ApplicationName)
 		var conn containers.Container
 		conn, err := containers.ConnectPodman()
 		if err != nil {
@@ -22,15 +22,16 @@ var launchCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		appName := args[0]
-		err = conn.StartService(appName)
+		err = conn.StopService(appName)
 		if err != nil {
 			slog.Debug("Failed to start container. Exiting")
 			os.Exit(1)
 		}
-		slog.Debug("Successfully started application", "application", appName)
+		slog.Debug("Successfully stopped application", "application", appName)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(launchCmd)
+	rootCmd.AddCommand(stopCmd)
 }
+

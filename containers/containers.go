@@ -1,46 +1,42 @@
 package containers
 
 // for loading config
-type ContainerConfigV1 struct {
+type ContainerConfig struct {
 	// name of the application that will be displayed to the user on the GUI
-	applicationName string
+	ApplicationName string
 
 	// Name of the container. If not supplied, custom default naming scheme will
 	// be used
-	containerName string
+	ContainerName string
 
 	// name of the imageName to be pulled from artifactory. Entire URL can be
 	// used here except the version
-	imageName string
+	ImageURL string
 
 	// Version of the image to be pulled from artifactory
-	imageVersion string
+	ImageVersion string
 
 	// subdomain that the container will use to direct network to the container
-	subdomain string
+	SubDomain string
 
 	// name of the `network` space in the container runners to isolate
 	// the application
-	networkName string
+	NetworkName string
 
 	// mounts host directories to containers
 	// mountDirs["HOST_DIR"] = "CONTAINER_DIR"
-	mountDirs map[string]string
+	MountDirs map[string]string
 
 	// bind host ports to container ports
 	// bindPorts["HOST_PORT"] = "CONTAINER_PORT"
-	bindPorts map[int]int
-}
+	BindPorts map[int]int
 
-// for configuring containers
-type ContainerCreateOptions struct {
-	ImageName       string
-	ContainerName   string
-	ApplicationName string
-	SubDomain       string
-	NetworkName     string
-	MountDirs       map[string]string
-	BindPorts       map[int]int
+	// environment variables and their values to be passed to containers
 	EnvValues       map[string]string
+
+	// env vars to be passed from host machine directly to pods
 	EnvVars         []string
+
+	// http port to export
+	ExposeHttpPort int
 }

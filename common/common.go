@@ -12,17 +12,17 @@ func CreateContainerName(
 	imageName string,
 	imageVersion string,
 ) (containerName string) {
-	imageName = strings.ReplaceAll(imageName, "/", "-")
-	imageName = strings.ReplaceAll(imageName, "\\", "-")
-	imageName = strings.ReplaceAll(imageName, ":", "-")
-	imageName = strings.ReplaceAll(imageName, ".", "-")
+	imageNameSplit := strings.Split(imageName, "/")
+	imageName = imageNameSplit[len(imageNameSplit) - 1]
+	imageName = strings.ReplaceAll(imageName, "\\", "_")
+	imageName = strings.ReplaceAll(imageName, ":", "_")
+	imageName = strings.ReplaceAll(imageName, ".", "_")
 
-	imageVersion = strings.ReplaceAll(imageName, ".", "-")
+	imageVersion = strings.ReplaceAll(imageVersion, ".", "_")
 
 	containerName = fmt.Sprintf(
-		"%s.%s.%s.%s",
+		"%s-%s-%s",
 		constants.ApplicationName,
-		applicationName,
 		imageName,
 		imageVersion,
 	)

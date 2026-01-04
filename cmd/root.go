@@ -60,14 +60,15 @@ func initializeConfig(cmd *cobra.Command) error {
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 	} else {
-		configDir, err := os.UserConfigDir()
+		slog.Debug("Mac Os config settings")
+		homeDir, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 
 		viper.AddConfigPath(".")
 		viper.AddConfigPath(
-			configDir + "/" +
-				constants.ApplicationName + "/" +
-				constants.ApplicationName,
+			homeDir + "/" +
+				".config" + "/" +
+				constants.ApplicationName + "/",
 		)
 		viper.SetConfigName("config")
 		viper.SetConfigType("yaml")

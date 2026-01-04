@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/containers/podman/v6/pkg/bindings"
 	"github.com/containers/podman/v6/pkg/bindings/containers"
@@ -173,9 +174,15 @@ func (conn PodManContext) NetworkExists(networkName string) (exists bool, err er
 }
 
 func (conn PodManContext) CreateContainer(
-	options ContainerCreateOptions,
+	options ContainerConfig,
 ) (err error) {
-	s := specgen.NewSpecGenerator(options.ImageName, false)
+	image := options.ImageURL
+
+	if strings.Trim(options.ImageVersion, " ") != "" {
+		image = options.ImageURL + ":" + strings.Trim(options.ImageVersion, " ")
+	}
+
+	s := specgen.NewSpecGenerator(image, false)
 	s.Name = options.ContainerName
 	s.Hostname = options.ContainerName
 
@@ -221,6 +228,16 @@ func (conn PodManContext) CreateContainer(
 	//     "SUBDOMAIN": subdomain,
 	// }
 
+	containerExists, err := containers.Exists(conn, options.ContainerName, nil)
+	if err != nil {
+		slog.Debug("Failed to check if container already exists", "error", err)
+		return err
+	}
+	if containerExists {
+		slog.Debug("Container already exists")
+		return nil
+	}
+
 	ctr, err := containers.CreateWithSpec(conn, s, nil)
 	if err != nil {
 		return fmt.Errorf("create container %q failed: %w", options.ContainerName, err)
@@ -229,9 +246,7 @@ func (conn PodManContext) CreateContainer(
 	return nil
 }
 
-func (conn PodManContext) StartService(
-	containerName string,
-) (err error) {
+func (conn PodManContext) StartService(containerName string) (err error) {
 	if err := containers.Start(conn, containerName, nil); err != nil {
 		slog.Debug("Failed to start container", "error", err)
 		return err
@@ -239,11 +254,15 @@ func (conn PodManContext) StartService(
 	return nil
 }
 
-func (conn PodManContext) CreateNetwork(containerName string) (err error) {
+func (conn PodManContext) CreateNetwork(networkName string) (err error) {
 	return nil
 }
 
 func (conn PodManContext) StopService(containerName string) (err error) {
+	if err := containers.Stop(conn, containerName, nil); err != nil {
+		slog.Debug("Failed to stop container", "error", err)
+		return err
+	}
 	return nil
 }
 
