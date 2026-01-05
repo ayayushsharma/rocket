@@ -4,9 +4,8 @@ type Container interface {
 	PullImage(imageName string) error
 	RemoveImage(imageName string) error
 
-	CreateContainer(
-		options ContainerConfig,
-	) error
+	CreateContainer(options ContainerConfig) error
+	RemoveContainer(containerName string, force bool) error
 
 	StartService(containerName string) error
 	PauseService(containerName string) error

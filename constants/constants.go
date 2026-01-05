@@ -17,6 +17,7 @@ var (
 	HomePageDir string
 	RoutesJson string
 	RegisteredAppsJson string
+	RegistriesPath string
 )
 
 func init() {
@@ -36,6 +37,7 @@ func init() {
 	HomePageDir = filepath.Join(configPath, "home-page")
 	RoutesJson = filepath.Join(HomePageDir, "static/application.json")
 	RegisteredAppsJson = filepath.Join(configPath, "registered.rockets.json")
+	RegistriesPath = filepath.Join(configPath, "registries")
 
 	slog.Debug(
 		"Default state paths",
@@ -43,5 +45,6 @@ func init() {
 		"home", HomePageDir,
 		"routes", RoutesJson,
 		"registered_apps", RegisteredAppsJson,
+		"registries", RegistriesPath,
 	)
 }

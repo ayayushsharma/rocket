@@ -1,40 +1,46 @@
 package registry
 
 import (
-	"log/slog"
-	"os"
-	"path/filepath"
-	"strings"
-
-	"io"
-	"net/http"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"log/slog"
+	"net/http"
+	"os"
+	"strings"
+	"sync"
+
+	"github.com/google/uuid"
+
+	"github.com/charmbracelet/huh"
 
 	"ayayushsharma/rocket/constants"
 	"ayayushsharma/rocket/containers"
 	"ayayushsharma/rocket/registry/schema"
-
-	"errors"
-	"fmt"
-	"sync"
-
-	"github.com/google/uuid"
-	fzf "github.com/junegunn/fzf/src"
 )
 
+
+type registryFetch struct {
+	data string
+	err error
+}
+
+type routerData struct {
+	ContainerURL string
+	AppName string
+	Description string
+}
+
+var AppAlreadyRegisteredErr error = errors.New("This app is already registered")
+var AppNotRegisteredErr error = errors.New("This app is not registered")
+var NoAppSelectedErr error = errors.New("No app selected for registration")
+
+
 func GetRegistries() (registries []string, err error){
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		slog.Debug("Could not get home dir location", "error", err)
-		return nil, err
-	}
-	configFile := filepath.Join(
-		userHomeDir,
-		".config",
-		constants.ApplicationName,
-		"registries",
-	)
-	data, err := os.ReadFile(configFile)
+	registriesFile := constants.RegistriesPath
+
+	data, err := os.ReadFile(registriesFile)
 	if err != nil {
 		slog.Debug("Could not read registry file", "error", err)
 		return nil, err
@@ -57,17 +63,13 @@ func GetRegistries() (registries []string, err error){
 	return registries, nil
 }
 
-type RegistryFetch struct {
-	data string
-	err error
-}
 
-func fetchURL(url string, wg *sync.WaitGroup, results chan<- RegistryFetch) {
+func fetchURL(url string, wg *sync.WaitGroup, results chan<- registryFetch) {
 	defer wg.Done()
 
 	resp, err := http.Get(url)
 	if err != nil {
-		results <- RegistryFetch{"", fmt.Errorf("Error fetching %s: %v", url, err)}
+		results <- registryFetch{"", fmt.Errorf("Error fetching %s: %v", url, err)}
 		return
 	}
 	defer resp.Body.Close()
@@ -75,18 +77,17 @@ func fetchURL(url string, wg *sync.WaitGroup, results chan<- RegistryFetch) {
 	// Read the response body (necessary for connection reuse in some cases)
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		results <- RegistryFetch{"", fmt.Errorf("Error reading body from %s: %v", url, err)}
+		results <- registryFetch{"", fmt.Errorf("Error reading body from %s: %v", url, err)}
 		return
 	}
 
-	results <- RegistryFetch{string(data), nil}
+	results <- registryFetch{string(data), nil}
 }
 
-func FetchRegistryData(
-	urls []string,
-) (containersData []containers.ContainerConfig){
+
+func FetchRegistryData(urls []string) (containerCfgs []containers.ContainerConfig){
 	var wg sync.WaitGroup
-	results := make(chan RegistryFetch, len(urls))
+	results := make(chan registryFetch, len(urls))
 
 	for _, url := range urls {
 		wg.Add(1)
@@ -102,98 +103,55 @@ func FetchRegistryData(
 		if result.err != nil {
 			slog.Debug("Failure in pulling data from registry", "error", result.err)
 		}
-		fmt.Println(result.data)
 		registryData, err := schema.InterpreterV1(result.data)
 		if err != nil {
 			slog.Debug("Parsing data from registry failed", "error", err)
 			continue
 		}
-		containersData = append(containersData, registryData...)
+		containerCfgs = append(containerCfgs, registryData...)
 	}
 
 	fmt.Println("All requests finished.")
-	return containersData
+	return containerCfgs
 }
 
 
 func ApplicationToRegister(
-    containerData []containers.ContainerConfig,
+    containerCfgs []containers.ContainerConfig,
 ) (selectedContainer containers.ContainerConfig, err error) {
-    mapping := make(map[string]containers.ContainerConfig, len(containerData))
-    fzfData := make([]string, 0, len(containerData))
+    mapping := make(map[string]containers.ContainerConfig, len(containerCfgs))
+    fzfData := []huh.Option[string]{}
 
-    for _, c := range containerData {
+    for _, c := range containerCfgs {
         id := uuid.NewString()
         mapping[id] = c
-        fzfData = append(fzfData, fmt.Sprintf("%s\t%s", c.ApplicationName, id))
+        fzfData = append(fzfData, huh.Option[string]{
+			Key: c.ApplicationName,
+			Value: id,
+		})
     }
 
-    inputChan := make(chan string)
-    outputChan := make(chan string)
+	var selectedAppId string
 
-    var wg sync.WaitGroup
+	err = huh.NewSelect[string]().
+	Title("Pick a application").
+	Options(fzfData...).
+	Value(&selectedAppId).
+	Run()
 
-    wg.Go(func() {
-        for _, s := range fzfData {
-            inputChan <- s
-        }
-        close(inputChan)
-    })
-
-    var selectedIDs []string
-    wg.Go(func() {
-        for line := range outputChan {
-            parts := strings.Split(line, "\t")
-            if len(parts) > 0 {
-                selectedIDs = append(selectedIDs, parts[len(parts)-1])
-            }
-        }
-    })
-
-    options, err := fzf.ParseOptions(
-        true,
-        []string{
-            "--reverse",
-            "--border",
-            "--height=40%",
-            "--with-nth=1",
-            "--delimiter=\t",
-        },
-    )
-    if err != nil {
-        return containers.ContainerConfig{}, err
-    }
-
-    options.Input = inputChan
-    options.Output = outputChan
-
-	exit, err := fzf.Run(options)
-
-    close(outputChan)
-
-    wg.Wait()
-
-	if exit == fzf.ExitNoMatch || 
-		exit == fzf.ExitError ||
-		exit == fzf.ExitInterrupt {
-		return containers.ContainerConfig{}, errors.New("Failed to get app ID")	
+	if err != nil {
+		slog.Debug("Failed to select application", "error", err)
+		return containers.ContainerConfig{}, err
 	}
 
-    if err != nil || len(selectedIDs) == 0 {
-        return containers.ContainerConfig{}, err
-    }
-
-    if selected, ok := mapping[selectedIDs[0]]; ok && exit == fzf.ExitOk{
+	if selected, ok := mapping[selectedAppId]; ok {
         return selected, nil
     }
     return containers.ContainerConfig{}, errors.New("Unknown value selected")
 }
 
-var AppAlreadyRegistered error = errors.New("This app is already registered")
-
-
 func ReadRegisteredApplications() (
-	registry map[string]containers.ContainerConfig, 
+	registeredApps map[string]containers.ContainerConfig, 
 	err error,
 ) {
 	data, err := os.ReadFile(constants.RegisteredAppsJson)
@@ -204,12 +162,12 @@ func ReadRegisteredApplications() (
 		data = []byte("{}")
 	}
 
-	if err := json.Unmarshal(data, &registry); err != nil {
+	if err := json.Unmarshal(data, &registeredApps); err != nil {
 		slog.Debug("Registry Unmarshalling failed", "error" ,err)
 		return nil, err
 	}
 
-	return registry, nil
+	return registeredApps, nil
 }
 
 func WriteRegisteredApplications(
@@ -231,9 +189,47 @@ func WriteRegisteredApplications(
 	return nil
 }
 
-func RegisterApplicationToConf(
-	container containers.ContainerConfig,
-) (err error) {
+
+func RefreshRouterConf() (err error) {
+	registry, err := ReadRegisteredApplications()
+	if err != nil {
+		slog.Debug("Failed to read locally registered applications", "error", err)
+		return err
+	}
+
+	routes := map[string]routerData{}
+
+	for _, val := range registry {
+		redirectionPort := fmt.Sprintf(
+			"http://%s:%d",
+			val.ContainerName,
+			val.ExposeHttpPort,
+		)
+		routes[val.SubDomain] = routerData{
+			ContainerURL: redirectionPort,
+			AppName: val.ApplicationName,
+		}
+	}
+
+	jsonData, err := json.MarshalIndent(routes, "", "  ")
+	if err != nil {
+		slog.Debug("Error marshalling route JSON", "error", err)
+		return err
+	}
+
+	err = os.WriteFile(constants.RoutesJson, jsonData, 0644)
+	if err != nil {
+		slog.Debug("Error writing to routes JSON", "error", err)
+		return err
+	}
+
+	slog.Debug("Successfully wrote routes conf")
+	return nil
+
+}
+
+
+func RegisterApplicationToConf(container containers.ContainerConfig) (err error) {
 	registry, err := ReadRegisteredApplications()
 	if err != nil {
 		slog.Debug("Failed to read locally registered applications", "error", err)
@@ -241,7 +237,7 @@ func RegisterApplicationToConf(
 	}
 
 	if _, exists := registry[container.ContainerName]; exists {
-		return AppAlreadyRegistered
+		return AppAlreadyRegisteredErr
 	}
 
 	registry[container.ContainerName] = container
@@ -254,46 +250,24 @@ func RegisterApplicationToConf(
 	return nil
 }
 
-type RouterData struct {
-	ContainerURL string
-	AppName string
-	Description string
-}
 
-func RefreshRouterConf() (ok bool, err error) {
+func UnregisterApplicationToConf(containerName string) (err error) {
 	registry, err := ReadRegisteredApplications()
 	if err != nil {
 		slog.Debug("Failed to read locally registered applications", "error", err)
-		return false, err
+		return err
 	}
 
-	routes := map[string]RouterData{}
-
-	for _, val := range registry {
-		redirectionPort := fmt.Sprintf(
-			"http://%s:%d",
-			val.ContainerName,
-			val.ExposeHttpPort,
-		)
-		routes[val.SubDomain] = RouterData{
-			ContainerURL: redirectionPort,
-			AppName: val.ApplicationName,
-		}
+	if _, exists := registry[containerName]; !exists {
+		return AppNotRegisteredErr
 	}
 
-	jsonData, err := json.MarshalIndent(routes, "", "  ")
+	delete(registry, containerName)
+
+	err = WriteRegisteredApplications(registry)
 	if err != nil {
-		slog.Debug("Error marshalling route JSON", "error", err)
-		return false, err
+		slog.Debug("Failed to write to local register of applications", "error", err)
+		return err
 	}
-
-	err = os.WriteFile(constants.RoutesJson, jsonData, 0644)
-	if err != nil {
-		slog.Debug("Error writing to routes JSON", "error", err)
-		return false, err
-	}
-
-	slog.Debug("Successfully wrote routes conf")
-	return true, nil
-
+	return nil
 }

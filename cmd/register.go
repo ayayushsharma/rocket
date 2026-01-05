@@ -35,6 +35,8 @@ var registerCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		return
+
 		networkName := viper.GetString("routes.network")
 		slog.Debug("Network found", "name", networkName)
 		appToRegister.NetworkName = networkName
@@ -52,7 +54,7 @@ var registerCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		_, err = registry.RegisterApplicationToConf(appToRegister)
+		err = registry.RegisterApplicationToConf(appToRegister)
 		if err != nil {
 			slog.Debug(
 				"Failed to register application container to configuration",
@@ -62,7 +64,7 @@ var registerCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		_, err = registry.RefreshRouterConf()
+		err = registry.RefreshRouterConf()
 		if err != nil {
 			slog.Debug("Failed to register application to routes", "error", err)
 			os.Exit(1)

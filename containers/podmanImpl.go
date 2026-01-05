@@ -222,7 +222,6 @@ func (conn PodManContext) CreateContainer(
 
 	s.RestartPolicy = "always"
 
-	// If you need environment variables exposed to the container:
 	// s.Env = map[string]string{
 	//     "APP_NAME":  applicationName,
 	//     "SUBDOMAIN": subdomain,
@@ -244,6 +243,15 @@ func (conn PodManContext) CreateContainer(
 	}
 	slog.Debug("Container created", "response", ctr)
 	return nil
+}
+
+
+func (conn PodManContext) RemoveContainer(containerName string, force bool) (err error) {
+	options := containers.RemoveOptions{
+		Force: &force,
+	}
+	_, err = containers.Remove(conn, containerName, &options)
+	return
 }
 
 func (conn PodManContext) StartService(containerName string) (err error) {
