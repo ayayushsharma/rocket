@@ -135,6 +135,13 @@ func Register(container containers.Config) (err error) {
 		slog.Debug("Failed to write to local register of applications", "error", err)
 		return err
 	}
+
+	err = syncRouter()
+	if err != nil {
+		slog.Debug("Failed to register application to routes", "error", err)
+		return
+	}
+
 	return nil
 }
 
