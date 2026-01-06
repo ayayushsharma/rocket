@@ -5,11 +5,12 @@ import (
 	"log/slog"
 	"strings"
 
-	"ayayushsharma/rocket/containers"
 	"ayayushsharma/rocket/common"
+	"ayayushsharma/rocket/containers"
 )
 
-type RegistryApplicationsV1 struct {
+
+type registryAppV1 struct {
 	Name 				string 	`json:"name"`
 	ArtifactoryUrl 		string 	`json:"artifactoryUrl"`
 	Version 			string 	`json:"version"`
@@ -17,19 +18,22 @@ type RegistryApplicationsV1 struct {
 	Hostname 			string 	`json:"hostname"`
 }
 
-type RegistryDataV1 struct {
-	Version 			string 						`json:"version"`
-	Application 		[]RegistryApplicationsV1 	`json:"applications"`
+type registryV1 struct {
+	Version 			int 						`json:"version"`
+	Application 		[]registryAppV1 	`json:"applications"`
 }
 
-func InterpreterV1(
+
+// Praser for Version 1 registries
+func parseV1Registry(
 	registryData string,
 ) (parsedData []containers.ContainerConfig, err error) {
-	var registry RegistryDataV1
+	var registry registryV1
 	if err := json.Unmarshal([]byte(registryData), &registry); err != nil {
 		slog.Debug("Registry Unmarshalling failed", "error" ,err)
 		return nil, err
 	}
+
 	for _, app := range registry.Application {
 		containerName := common.CreateContainerName(
 			app.Name,

@@ -4,6 +4,7 @@ import (
 	"ayayushsharma/rocket/constants"
 	"ayayushsharma/rocket/containers"
 	"ayayushsharma/rocket/registry"
+	"ayayushsharma/rocket/register"
 	"fmt"
 	"log/slog"
 	"os"
@@ -25,11 +26,17 @@ var registerCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		registries, _ := registry.GetRegistries()
-		slog.Debug("Pulled data from registries", "data", registries)
-		data := registry.FetchRegistryData(registries)
+		registries, err := registry.GetAll()
 
-		appToRegister, err := registry.ApplicationToRegister(data)
+		if err != nil {
+			slog.Debug("Failed to pull list of registries", "error", err)
+			os.Exit(1)
+		}
+
+		slog.Debug("Pulled data from registries", "data", registries)
+		data := registry.FetchRegistries(registries)
+
+		appToRegister, err := register.SelectApplication(data)
 		if err != nil {
 			slog.Debug("Failed to select application", "error", err)
 			os.Exit(1)
@@ -54,7 +61,7 @@ var registerCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err = registry.RegisterApplicationToConf(appToRegister)
+		err = register.RegisterApplicationToConf(appToRegister)
 		if err != nil {
 			slog.Debug(
 				"Failed to register application container to configuration",
@@ -64,7 +71,7 @@ var registerCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err = registry.RefreshRouterConf()
+		err = register.RefreshRouterConf()
 		if err != nil {
 			slog.Debug("Failed to register application to routes", "error", err)
 			os.Exit(1)

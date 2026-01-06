@@ -50,7 +50,6 @@ func init() {
 		"",
 		"config file (default is $XDG_CONFIG_HOME/rocket/rocket.yaml)",
 	)
-	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 func initializeConfig(cmd *cobra.Command) error {

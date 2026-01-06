@@ -3,7 +3,7 @@ package cmd
 import (
 	"ayayushsharma/rocket/constants"
 	"ayayushsharma/rocket/containers"
-	"ayayushsharma/rocket/registry"
+	"ayayushsharma/rocket/register"
 	"log/slog"
 	// "os"
 
@@ -52,7 +52,7 @@ func unregisterApplication(
 		return
 	}
 
-	err = registry.UnregisterApplicationToConf(containerName)
+	err = register.UnregisterApplicationToConf(containerName)
 	if err != nil {
 		slog.Debug(
 			"Failed to unregister application container to configuration",
@@ -62,7 +62,7 @@ func unregisterApplication(
 		return
 	}
 
-	err = registry.RefreshRouterConf()
+	err = register.RefreshRouterConf()
 	if err != nil {
 		slog.Debug("Failed to unregister application to routes", "error", err)
 		return

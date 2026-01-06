@@ -38,9 +38,9 @@ var miscCmd = &cobra.Command{
 		// 		EnvVars:         nil,
 		// 	},
 		// )
-		registries, _ := registry.GetRegistries()
+		registries, _ := registry.GetAll()
 		fmt.Println(registries)
-		registry.FetchRegistryData(registries)
+		registry.FetchRegistries(registries)
 
 	},
 }
