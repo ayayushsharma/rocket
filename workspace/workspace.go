@@ -1,4 +1,4 @@
-// Handlers for local registrations of applications
+// Managers for local workspace configuration of applications
 
 package workspace
 
@@ -14,48 +14,49 @@ import (
 	"ayayushsharma/rocket/containers"
 )
 
-type routerData struct {
-	ContainerURL string
-	AppName      string
-	Description  string
-}
-
-var AppAlreadyRegisteredErr error = errors.New("This app is already registered")
-var AppNotRegisteredErr error = errors.New("This app is not registered")
-var NoAppSelectedErr error = errors.New("No app selected for registration")
-
-func GetRegistered() (
-	registeredApps map[string]containers.Config,
-	err error,
-) {
-	data, err := os.ReadFile(constants.RegisteredAppsJson)
+func getWorkspace() (workspace workspaceSchema, err error) {
+	data, err := os.ReadFile(constants.WorkspaceAppsJson)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
-			return nil, err
+			return
 		}
-		data = []byte("{}")
 	}
 
-	if err := json.Unmarshal(data, &registeredApps); err != nil {
-		slog.Debug("Registry Unmarshalling failed", "error", err)
-		return nil, err
-	}
-
-	return registeredApps, nil
-}
-
-func WriteRegisteredApps(
-	apps map[string]containers.Config,
-) (err error) {
-	jsonData, err := json.MarshalIndent(apps, "", "  ")
-	if err != nil {
-		slog.Debug("Error marshalling registered apps JSON", "error", err)
+	if data != nil {
+		if err = json.Unmarshal(data, &workspace); err != nil {
+			slog.Debug("Workspace Unmarshalling failed", "error", err)
+			return
+		}
 		return
 	}
 
-	err = os.WriteFile(constants.RegisteredAppsJson, jsonData, 0644)
+	workspace = workspaceSchema{
+		Applications: map[string]containers.Config{},
+	}
+
+	return workspace, nil
+}
+
+func updateWorkspace(
+	apps map[string]containers.Config,
+) (err error) {
+	workspace, err := getWorkspace()
 	if err != nil {
-		slog.Debug("Error writing to registered apps JSON", "error", err)
+		slog.Debug("Failed to load workspace configs", "error", err)
+		return
+	}
+
+	workspace.Applications = apps
+
+	jsonData, err := json.MarshalIndent(workspace, "", "  ")
+	if err != nil {
+		slog.Debug("Error marshalling workspace data", "error", err)
+		return
+	}
+
+	err = os.WriteFile(constants.WorkspaceAppsJson, jsonData, 0644)
+	if err != nil {
+		slog.Debug("Error writing to workspace data", "error", err)
 		return
 	}
 
@@ -63,8 +64,21 @@ func WriteRegisteredApps(
 	return nil
 }
 
-func RefreshRouterConf() (err error) {
-	registry, err := GetRegistered()
+
+func GetApps() (
+	workspaceApps map[string]containers.Config,
+	err error,
+) {
+	workspace, err := getWorkspace()
+	if err != nil {
+		return
+	}
+	return workspace.Applications, nil
+}
+
+
+func syncRouter() (err error) {
+	registry, err := GetApps()
 	if err != nil {
 		slog.Debug("Failed to read locally registered applications", "error", err)
 		return err
@@ -101,20 +115,22 @@ func RefreshRouterConf() (err error) {
 
 }
 
-func RegisterApplicationToConf(container containers.Config) (err error) {
-	registry, err := GetRegistered()
+func Register(container containers.Config) (err error) {
+	apps, err := GetApps()
 	if err != nil {
-		slog.Debug("Failed to read locally registered applications", "error", err)
-		return err
+		slog.Debug("Failed to read workspace apps", "error", err)
+		return
 	}
 
-	if _, exists := registry[container.ContainerName]; exists {
-		return AppAlreadyRegisteredErr
+	if _, exists := apps[container.ContainerName]; exists {
+		return &AppAlreadyRegisteredErr{
+			ContainerName: container.ContainerName,
+		}
 	}
 
-	registry[container.ContainerName] = container
+	apps[container.ContainerName] = container
 
-	err = WriteRegisteredApps(registry)
+	err = updateWorkspace(apps)
 	if err != nil {
 		slog.Debug("Failed to write to local register of applications", "error", err)
 		return err
@@ -122,8 +138,8 @@ func RegisterApplicationToConf(container containers.Config) (err error) {
 	return nil
 }
 
-func UnregisterApplicationToConf(containerName string) (err error) {
-	registry, err := GetRegistered()
+func Unregister(containerName string) (err error) {
+	registry, err := GetApps()
 	if err != nil {
 		slog.Debug("Failed to read locally registered applications", "error", err)
 		return err
@@ -135,10 +151,17 @@ func UnregisterApplicationToConf(containerName string) (err error) {
 
 	delete(registry, containerName)
 
-	err = WriteRegisteredApps(registry)
+	err = updateWorkspace(registry)
 	if err != nil {
 		slog.Debug("Failed to write to local register of applications", "error", err)
 		return err
 	}
+
+	err = syncRouter()
+	if err != nil {
+		slog.Debug("Failed to register application to routes", "error", err)
+		return
+	}
+
 	return nil
 }

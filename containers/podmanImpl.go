@@ -136,6 +136,16 @@ func connectPodman() (PodManContext, error) {
 	return PodManContext{conn}, nil
 }
 
+
+func (conn PodManContext) ImageExists(imageName string) (exists bool, err error) {
+	exists, err = images.Exists(conn, imageName, nil)
+	if err != nil {
+		slog.Debug("Failed to check if container image exists", "error", err)
+		return false, err
+	}
+	return exists, nil
+}
+
 func (conn PodManContext) PullImage(imageName string) error {
 	_, err := images.Pull(conn, imageName, nil)
 	if err != nil {
@@ -253,7 +263,6 @@ func (conn PodManContext) RemoveContainer(containerName string, force bool) (err
 
 func (conn PodManContext) StartService(containerName string) (err error) {
 	if err := containers.Start(conn, containerName, nil); err != nil {
-		slog.Debug("Failed to start container", "error", err)
 		return err
 	}
 	return nil
@@ -265,7 +274,6 @@ func (conn PodManContext) CreateNetwork(networkName string) (err error) {
 
 func (conn PodManContext) StopService(containerName string) (err error) {
 	if err := containers.Stop(conn, containerName, nil); err != nil {
-		slog.Debug("Failed to stop container", "error", err)
 		return err
 	}
 	return nil

@@ -1,6 +1,7 @@
 package containers
 
 type ContainerManager interface {
+	ImageExists(imageName string) (bool, error)
 	PullImage(imageName string) error
 	RemoveImage(imageName string) error
 

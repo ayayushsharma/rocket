@@ -1,15 +1,14 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"ayayushsharma/rocket/constants"
-	"ayayushsharma/rocket/containers"
 	"ayayushsharma/rocket/registry"
 	"ayayushsharma/rocket/workspace"
 )
@@ -20,7 +19,6 @@ var registerCmd = &cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		slog.Debug("Registering... " + constants.ApplicationName)
-		conn, err := containers.Manager()
 		if err != nil {
 			slog.Debug("Failed to select application", "error", err)
 			return
@@ -42,50 +40,23 @@ var registerCmd = &cobra.Command{
 			return
 		}
 
-		return
-
 		networkName := viper.GetString("routes.network")
 		slog.Debug("Network found", "name", networkName)
 		appToRegister.NetworkName = networkName
 		slog.Debug("App Data", "data", appToRegister)
+		err = workspace.Register(appToRegister)
 
-		image := appToRegister.ImageURL
-		if strings.Trim(appToRegister.ImageVersion, " ") != "" {
-			image = fmt.Sprintf(
-				"%s:%s", image, strings.Trim(appToRegister.ImageVersion, " "),
-			)
-		}
-		err = conn.PullImage(image)
 		if err != nil {
-			slog.Debug("Pulling image failed for application container", "error", err)
-			return
-		}
-
-		err = workspace.RegisterApplicationToConf(appToRegister)
-		if err != nil {
-			slog.Debug(
-				"Failed to register application container to configuration",
-				"error",
-				err,
-			)
-			return
-		}
-
-		err = workspace.RefreshRouterConf()
-		if err != nil {
-			slog.Debug("Failed to register application to routes", "error", err)
-			return
-		}
-
-		err = conn.CreateContainer(appToRegister)
-		if err != nil {
-			slog.Debug("Failed to register application container", "error", err)
-			return
-		}
-
-		err = conn.StartService(appToRegister.ContainerName)
-		if err != nil {
-			slog.Debug("Failed to start application", "error", err)
+			var alreadyRegistered *workspace.AppAlreadyRegisteredErr
+			if errors.As(err, &alreadyRegistered){
+				fmt.Printf(
+					"Already registered as '%s' \n",
+					alreadyRegistered.ContainerName,
+				)
+				fmt.Println("Edit it's conf and sync to get desired app state'")
+				return nil
+			}
+			slog.Debug("Failed to register app to workspace", "error", err)
 			return
 		}
 

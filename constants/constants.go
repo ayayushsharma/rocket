@@ -16,7 +16,7 @@ var (
 	NginxConfPath      string
 	HomePageDir        string
 	RoutesJson         string
-	RegisteredAppsJson string
+	WorkspaceAppsJson string
 	RegistriesPath     string
 )
 
@@ -36,7 +36,7 @@ func init() {
 	NginxConfPath = filepath.Join(configPath, "nginx/nginx.conf")
 	HomePageDir = filepath.Join(configPath, "home-page")
 	RoutesJson = filepath.Join(HomePageDir, "static/application.json")
-	RegisteredAppsJson = filepath.Join(configPath, "registered.rockets.json")
+	WorkspaceAppsJson = filepath.Join(configPath, "registered.rockets.json")
 	RegistriesPath = filepath.Join(configPath, "registries")
 
 	slog.Debug(
@@ -44,7 +44,7 @@ func init() {
 		"nginx", NginxConfPath,
 		"home", HomePageDir,
 		"routes", RoutesJson,
-		"registered_apps", RegisteredAppsJson,
+		"registered_apps", WorkspaceAppsJson,
 		"registries", RegistriesPath,
 	)
 }
