@@ -16,8 +16,9 @@ import (
 )
 
 type registryPull struct {
-	data string
-	err  error
+	priority int // lower number means higher priority
+	data     string
+	err      error
 }
 
 // Returns list of all registries present on the local registry config
@@ -30,9 +31,9 @@ func GetAll() (registries []string, err error) {
 		return nil, err
 	}
 
-	registryLines := strings.Split(string(data), "\n")
+	registryLines := strings.SplitSeq(string(data), "\n")
 
-	for _, line := range registryLines {
+	for line := range registryLines {
 		line = strings.TrimSpace(line)
 		if len(line) == 0 {
 			continue
@@ -48,51 +49,39 @@ func GetAll() (registries []string, err error) {
 }
 
 // fetch registry over the internet
-func fetchOverHTTP(
-	url string,
-	wg *sync.WaitGroup,
-	results chan<- registryPull,
-) {
+func fetchOverHTTP(url string) (data []byte, err error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		results <- registryPull{
-			"", fmt.Errorf("Error fetching %s: %v", url, err),
-		}
+		err = fmt.Errorf("Error fetching %s: %v", url, err)
 		return
 	}
 	defer resp.Body.Close()
 
-	data, err := io.ReadAll(resp.Body)
+	data, err = io.ReadAll(resp.Body)
 	if err != nil {
-		results <- registryPull{
-			"", fmt.Errorf("Error reading body from %s: %v", url, err),
-		}
+		err = fmt.Errorf("Error reading body from %s: %v", url, err)
 		return
 	}
 
-	results <- registryPull{string(data), nil}
+	return data, nil
 }
 
 // fetch registry over the internet
-func fetchOverDisk(
-	path string,
-	wg *sync.WaitGroup,
-	results chan<- registryPull,
-) {
-	data, err := os.ReadFile(path)
+func fetchOverDisk(path string) (data []byte, err error) {
+	data, err = os.ReadFile(path)
 	if err != nil {
 		slog.Debug("Could not read registry file", "error", err)
-		results <- registryPull{
-			"", fmt.Errorf("Could not read registry from %s: %v", path, err),
-		}
+		err = fmt.Errorf("Could not read registry from %s: %v", path, err)
+		return
 	}
-	results <- registryPull{string(data), nil}
+	return
 }
 
 // Fetches registry data over any types of registry type
 // - HTTP type registry
 // - local file type registry
 func fetch(
+	registryPriority int,
 	registryURI string,
 	wg *sync.WaitGroup,
 	results chan<- registryPull,
@@ -106,30 +95,50 @@ func fetch(
 			strings.EqualFold(u.Scheme, "https"))
 
 	if isURL {
-		fetchOverHTTP(registryURI, wg, results)
+		data, err := fetchOverHTTP(registryURI)
+		results <- registryPull{
+			priority: registryPriority,
+			data:     string(data),
+			err:      err,
+		}
 		return
 	}
 
 	_, err = os.Stat(registryURI)
 	isDisk := err == nil
 	if isDisk {
-		fetchOverDisk(registryURI, wg, results)
+		data, err := fetchOverDisk(registryURI)
+		results <- registryPull{
+			priority: registryPriority,
+			data:     string(data),
+			err:      err,
+		}
 		return
 	}
 
+	results <- registryPull{
+		priority: registryPriority,
+		data:     "",
+		err:      err,
+	}
 	slog.Debug("No a valid registry path", "error", registryURI)
+}
+
+type AppsOnRegistry struct {
+	Priority int // lower number means higher priority
+	App      *containers.ContainerConfig
 }
 
 // fetches all registries for available applications
 func FetchRegistries(registryURIs []string) (
-	containerCfgs []containers.ContainerConfig,
+	containerCfgs []AppsOnRegistry,
 ) {
 	var wg sync.WaitGroup
 	results := make(chan registryPull, len(registryURIs))
 
-	for _, uri := range registryURIs {
+	for priority, uri := range registryURIs {
 		wg.Add(1)
-		go fetch(uri, &wg, results)
+		go fetch(priority, uri, &wg, results)
 	}
 
 	go func() {
@@ -140,13 +149,22 @@ func FetchRegistries(registryURIs []string) (
 	for result := range results {
 		if result.err != nil {
 			slog.Debug("Failure in pulling data from registry", "error", result.err)
+			continue
 		}
 		registryData, err := schema.Parse(result.data)
 		if err != nil {
 			slog.Debug("Parsing data from registry failed", "error", err)
 			continue
 		}
-		containerCfgs = append(containerCfgs, registryData...)
+		appsWithPriority := []AppsOnRegistry{}
+		for index := range registryData {
+			appsWithPriority = append(appsWithPriority, AppsOnRegistry{
+				Priority: result.priority,
+				App:      &registryData[index],
+			})
+		}
+
+		containerCfgs = append(containerCfgs, appsWithPriority...)
 	}
 
 	slog.Debug("Finished data pull from all registry")

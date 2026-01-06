@@ -45,3 +45,11 @@ func ExtractImageVersion(imageUrl string) string {
 	}
 	return "latest"
 }
+
+func ImageWithVersion(imageUrl string, imageVersion string) string {
+	imageVersion = strings.TrimSpace(imageVersion)
+	if imageVersion == "" {
+		return imageUrl
+	}
+	return fmt.Sprintf("%s:%s", imageUrl, imageVersion)
+}

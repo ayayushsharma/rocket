@@ -11,8 +11,10 @@ import (
 
 	"github.com/charmbracelet/huh"
 
+	"ayayushsharma/rocket/common"
 	"ayayushsharma/rocket/constants"
 	"ayayushsharma/rocket/containers"
+	"ayayushsharma/rocket/registry"
 )
 
 type routerData struct {
@@ -25,29 +27,47 @@ var AppAlreadyRegisteredErr error = errors.New("This app is already registered")
 var AppNotRegisteredErr error = errors.New("This app is not registered")
 var NoAppSelectedErr error = errors.New("No app selected for registration")
 
-func SelectApplication(containerCfgs []containers.ContainerConfig) (
+func SelectApplication(apps []registry.AppsOnRegistry) (
 	selectedContainer containers.ContainerConfig,
 	err error,
 ) {
-	mapping := make(map[string]containers.ContainerConfig, len(containerCfgs))
-	fzfData := []huh.Option[string]{}
+	fzfData := []huh.Option[*registry.AppsOnRegistry]{}
 
-	for index, c := range containerCfgs {
-		mapping[string(index)] = c
-		fzfData = append(fzfData, huh.Option[string]{
+	// deduplicating section
+	dedup := make(map[string]*registry.AppsOnRegistry)
+
+	for index := range apps {
+		fullImageName := common.ImageWithVersion(
+			apps[index].App.ImageURL,
+			apps[index].App.ImageVersion,
+		)
+		if _, ok := dedup[fullImageName]; ok {
+			if dedup[fullImageName].Priority > apps[index].Priority {
+				// override the new image
+				dedup[fullImageName] = &apps[index]
+				continue
+			}
+		}
+		dedup[fullImageName] = &apps[index]
+	}
+
+	// mapping section
+	for index := range dedup {
+		fzfData = append(fzfData, huh.Option[*registry.AppsOnRegistry]{
 			Key: fmt.Sprintf(
 				"%-20s %-10s - %s",
-				c.ApplicationName,
-				c.ImageVersion,
-				c.ImageURL,
+				dedup[index].App.ApplicationName,
+				dedup[index].App.ImageVersion,
+				dedup[index].App.ImageURL,
 			),
-			Value: string(index),
+			Value: dedup[index],
 		})
 	}
 
-	var selectedAppId string
+	// selection section
+	var selectedAppId *registry.AppsOnRegistry
 
-	err = huh.NewSelect[string]().
+	err = huh.NewSelect[*registry.AppsOnRegistry]().
 		Title("Pick a application").
 		Options(fzfData...).
 		Value(&selectedAppId).
@@ -58,10 +78,7 @@ func SelectApplication(containerCfgs []containers.ContainerConfig) (
 		return containers.ContainerConfig{}, err
 	}
 
-	if selected, ok := mapping[selectedAppId]; ok {
-		return selected, nil
-	}
-	return containers.ContainerConfig{}, errors.New("Unknown value selected")
+	return *selectedAppId.App, nil
 }
 
 func ReadRegisteredApplications() (
