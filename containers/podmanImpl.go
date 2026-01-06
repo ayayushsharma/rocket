@@ -245,7 +245,6 @@ func (conn PodManContext) CreateContainer(
 	return nil
 }
 
-
 func (conn PodManContext) RemoveContainer(containerName string, force bool) (err error) {
 	options := containers.RemoveOptions{
 		Force: &force,

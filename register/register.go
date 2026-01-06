@@ -10,7 +10,6 @@ import (
 	"os"
 
 	"github.com/charmbracelet/huh"
-	"github.com/google/uuid"
 
 	"ayayushsharma/rocket/constants"
 	"ayayushsharma/rocket/containers"
@@ -18,44 +17,41 @@ import (
 
 type routerData struct {
 	ContainerURL string
-	AppName string
-	Description string
+	AppName      string
+	Description  string
 }
-
 
 var AppAlreadyRegisteredErr error = errors.New("This app is already registered")
 var AppNotRegisteredErr error = errors.New("This app is not registered")
 var NoAppSelectedErr error = errors.New("No app selected for registration")
 
-
 func SelectApplication(containerCfgs []containers.ContainerConfig) (
 	selectedContainer containers.ContainerConfig,
 	err error,
 ) {
-    mapping := make(map[string]containers.ContainerConfig, len(containerCfgs))
-    fzfData := []huh.Option[string]{}
+	mapping := make(map[string]containers.ContainerConfig, len(containerCfgs))
+	fzfData := []huh.Option[string]{}
 
-    for _, c := range containerCfgs {
-        id := uuid.NewString()
-        mapping[id] = c
-        fzfData = append(fzfData, huh.Option[string]{
+	for index, c := range containerCfgs {
+		mapping[string(index)] = c
+		fzfData = append(fzfData, huh.Option[string]{
 			Key: fmt.Sprintf(
-				"%s - %s - %s",
+				"%-20s %-10s - %s",
 				c.ApplicationName,
-				c.ImageURL,
 				c.ImageVersion,
+				c.ImageURL,
 			),
-			Value: id,
+			Value: string(index),
 		})
-    }
+	}
 
 	var selectedAppId string
 
 	err = huh.NewSelect[string]().
-	Title("Pick a application").
-	Options(fzfData...).
-	Value(&selectedAppId).
-	Run()
+		Title("Pick a application").
+		Options(fzfData...).
+		Value(&selectedAppId).
+		Run()
 
 	if err != nil {
 		slog.Debug("Failed to select application", "error", err)
@@ -63,13 +59,13 @@ func SelectApplication(containerCfgs []containers.ContainerConfig) (
 	}
 
 	if selected, ok := mapping[selectedAppId]; ok {
-        return selected, nil
-    }
-    return containers.ContainerConfig{}, errors.New("Unknown value selected")
+		return selected, nil
+	}
+	return containers.ContainerConfig{}, errors.New("Unknown value selected")
 }
 
 func ReadRegisteredApplications() (
-	registeredApps map[string]containers.ContainerConfig, 
+	registeredApps map[string]containers.ContainerConfig,
 	err error,
 ) {
 	data, err := os.ReadFile(constants.RegisteredAppsJson)
@@ -81,7 +77,7 @@ func ReadRegisteredApplications() (
 	}
 
 	if err := json.Unmarshal(data, &registeredApps); err != nil {
-		slog.Debug("Registry Unmarshalling failed", "error" ,err)
+		slog.Debug("Registry Unmarshalling failed", "error", err)
 		return nil, err
 	}
 
@@ -90,7 +86,7 @@ func ReadRegisteredApplications() (
 
 func WriteRegisteredApplications(
 	apps map[string]containers.ContainerConfig,
-) (err error){
+) (err error) {
 	jsonData, err := json.MarshalIndent(apps, "", "  ")
 	if err != nil {
 		slog.Debug("Error marshalling registered apps JSON", "error", err)
@@ -106,7 +102,6 @@ func WriteRegisteredApplications(
 	slog.Debug("Successfully wrote registered app conf")
 	return nil
 }
-
 
 func RefreshRouterConf() (err error) {
 	registry, err := ReadRegisteredApplications()
@@ -125,7 +120,7 @@ func RefreshRouterConf() (err error) {
 		)
 		routes[val.SubDomain] = routerData{
 			ContainerURL: redirectionPort,
-			AppName: val.ApplicationName,
+			AppName:      val.ApplicationName,
 		}
 	}
 
@@ -166,7 +161,6 @@ func RegisterApplicationToConf(container containers.ContainerConfig) (err error)
 	}
 	return nil
 }
-
 
 func UnregisterApplicationToConf(containerName string) (err error) {
 	registry, err := ReadRegisteredApplications()

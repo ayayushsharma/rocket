@@ -13,15 +13,15 @@ const (
 )
 
 var (
-	NginxConfPath string
-	HomePageDir string
-	RoutesJson string
+	NginxConfPath      string
+	HomePageDir        string
+	RoutesJson         string
 	RegisteredAppsJson string
-	RegistriesPath string
+	RegistriesPath     string
 )
 
 func init() {
-	homeDir, err := os.UserHomeDir();
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		slog.Debug("Could not get user home dir", "error", err)
 	}

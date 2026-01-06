@@ -1,36 +1,36 @@
 package cmd
 
 import (
-	"ayayushsharma/rocket/constants"
-	"ayayushsharma/rocket/containers"
-	"ayayushsharma/rocket/registry"
-	"ayayushsharma/rocket/register"
 	"fmt"
 	"log/slog"
-	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"ayayushsharma/rocket/constants"
+	"ayayushsharma/rocket/containers"
+	"ayayushsharma/rocket/register"
+	"ayayushsharma/rocket/registry"
 )
 
 var registerCmd = &cobra.Command{
 	Use:   "register",
 	Short: "registers specified containerised application",
 
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		slog.Debug("Registering... " + constants.ApplicationName)
 		conn, err := containers.ConnectPodman()
 		if err != nil {
 			slog.Debug("Failed to select application", "error", err)
-			os.Exit(1)
+			return
 		}
 
 		registries, err := registry.GetAll()
 
 		if err != nil {
 			slog.Debug("Failed to pull list of registries", "error", err)
-			os.Exit(1)
+			return
 		}
 
 		slog.Debug("Pulled data from registries", "data", registries)
@@ -39,7 +39,7 @@ var registerCmd = &cobra.Command{
 		appToRegister, err := register.SelectApplication(data)
 		if err != nil {
 			slog.Debug("Failed to select application", "error", err)
-			os.Exit(1)
+			return
 		}
 
 		return
@@ -58,7 +58,7 @@ var registerCmd = &cobra.Command{
 		err = conn.PullImage(image)
 		if err != nil {
 			slog.Debug("Pulling image failed for application container", "error", err)
-			os.Exit(1)
+			return
 		}
 
 		err = register.RegisterApplicationToConf(appToRegister)
@@ -68,27 +68,28 @@ var registerCmd = &cobra.Command{
 				"error",
 				err,
 			)
-			os.Exit(1)
+			return
 		}
 
 		err = register.RefreshRouterConf()
 		if err != nil {
 			slog.Debug("Failed to register application to routes", "error", err)
-			os.Exit(1)
+			return
 		}
 
 		err = conn.CreateContainer(appToRegister)
 		if err != nil {
 			slog.Debug("Failed to register application container", "error", err)
-			os.Exit(1)
+			return
 		}
 
 		err = conn.StartService(appToRegister.ContainerName)
 		if err != nil {
 			slog.Debug("Failed to start application", "error", err)
-			os.Exit(1)
+			return
 		}
 
+		return nil
 	},
 }
 

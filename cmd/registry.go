@@ -24,4 +24,3 @@ var registryCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(registryCmd)
 }
-

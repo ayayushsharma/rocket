@@ -32,10 +32,10 @@ type ContainerConfig struct {
 	BindPorts map[int]int
 
 	// environment variables and their values to be passed to containers
-	EnvValues       map[string]string
+	EnvValues map[string]string
 
 	// env vars to be passed from host machine directly to pods
-	EnvVars         []string
+	EnvVars []string
 
 	// http port to export
 	ExposeHttpPort int

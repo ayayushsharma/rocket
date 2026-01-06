@@ -5,7 +5,6 @@ go 1.25.5
 require (
 	github.com/charmbracelet/huh v0.8.0
 	github.com/containers/podman/v6 v6.0.0-20251222194356-2fbecb48e166
-	github.com/google/uuid v1.6.0
 	github.com/opencontainers/runtime-spec v1.3.0
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
@@ -66,6 +65,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-containerregistry v0.20.6 // indirect
 	github.com/google/go-intervals v0.0.2 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/schema v1.4.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect

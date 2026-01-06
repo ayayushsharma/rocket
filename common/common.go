@@ -1,10 +1,9 @@
 package common
 
-
 import (
-	"strings"
-	"fmt"
 	"ayayushsharma/rocket/constants"
+	"fmt"
+	"strings"
 )
 
 func CreateContainerName(
@@ -13,7 +12,7 @@ func CreateContainerName(
 	imageVersion string,
 ) (containerName string) {
 	imageNameSplit := strings.Split(imageName, "/")
-	imageName = imageNameSplit[len(imageNameSplit) - 1]
+	imageName = imageNameSplit[len(imageNameSplit)-1]
 	imageName = strings.ReplaceAll(imageName, "\\", "_")
 	imageName = strings.ReplaceAll(imageName, ":", "_")
 	imageName = strings.ReplaceAll(imageName, ".", "_")
@@ -42,7 +41,7 @@ func ExtractImageVersion(imageUrl string) string {
 	containsVersion := strings.Contains(imageUrl, ":")
 	if containsVersion {
 		versionIndex := strings.Index(imageUrl, ":")
-		return imageUrl[versionIndex + 1:]
+		return imageUrl[versionIndex+1:]
 	}
 	return "latest"
 }

@@ -3,9 +3,9 @@ package registry
 import (
 	"fmt"
 	"io"
-	"net/url"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -15,14 +15,13 @@ import (
 	"ayayushsharma/rocket/registry/schema"
 )
 
-
 type registryPull struct {
 	data string
-	err error
+	err  error
 }
 
 // Returns list of all registries present on the local registry config
-func GetAll() (registries []string, err error){
+func GetAll() (registries []string, err error) {
 	registriesFile := constants.RegistriesPath
 
 	data, err := os.ReadFile(registriesFile)
@@ -30,10 +29,10 @@ func GetAll() (registries []string, err error){
 		slog.Debug("Could not read registry file", "error", err)
 		return nil, err
 	}
-	
-	registryLines := strings.Split(string(data),"\n")
 
-	for _, line := range(registryLines) {
+	registryLines := strings.Split(string(data), "\n")
+
+	for _, line := range registryLines {
 		line = strings.TrimSpace(line)
 		if len(line) == 0 {
 			continue
@@ -47,7 +46,6 @@ func GetAll() (registries []string, err error){
 
 	return registries, nil
 }
-
 
 // fetch registry over the internet
 func fetchOverHTTP(
@@ -91,7 +89,6 @@ func fetchOverDisk(
 	results <- registryPull{string(data), nil}
 }
 
-
 // Fetches registry data over any types of registry type
 // - HTTP type registry
 // - local file type registry
@@ -106,15 +103,15 @@ func fetch(
 		u.Scheme != "" &&
 		u.Host != "" &&
 		(strings.EqualFold(u.Scheme, "http") ||
-		strings.EqualFold(u.Scheme, "https"))
+			strings.EqualFold(u.Scheme, "https"))
 
 	if isURL {
 		fetchOverHTTP(registryURI, wg, results)
 		return
 	}
 
-    _, err = os.Stat(registryURI)
-	isDisk := err == nil 
+	_, err = os.Stat(registryURI)
+	isDisk := err == nil
 	if isDisk {
 		fetchOverDisk(registryURI, wg, results)
 		return

@@ -11,7 +11,7 @@ import (
 )
 
 var startCmd = &cobra.Command{
-	Use:   "start", 
+	Use:   "start",
 	Short: "Starts Rocket",
 	Run: func(cmd *cobra.Command, args []string) {
 		slog.Debug("Launching... " + constants.ApplicationName)
@@ -25,11 +25,9 @@ var startCmd = &cobra.Command{
 	},
 }
 
-
 func init() {
 	rootCmd.AddCommand(startCmd)
 }
-
 
 func start_router(conn containers.Container) (err error) {
 	networkName := viper.GetString("routes.network")
@@ -37,21 +35,21 @@ func start_router(conn containers.Container) (err error) {
 
 	mountDirs := map[string]string{
 		constants.NginxConfPath: "/usr/local/openresty/nginx/conf/nginx.conf",
-		constants.HomePageDir: "/usr/share/nginx/html",
+		constants.HomePageDir:   "/usr/share/nginx/html",
 	}
 
-	bindPorts := map[int]int {
+	bindPorts := map[int]int{
 		constants.ApplicationPort: 80,
 	}
 
 	routerConfig := containers.ContainerConfig{
-		ImageURL: "openresty/openresty:alpine",
-		ContainerName: constants.RouterContainer,
+		ImageURL:        "openresty/openresty:alpine",
+		ContainerName:   constants.RouterContainer,
 		ApplicationName: constants.RouterContainer,
-		SubDomain: "app.localhost",
-		NetworkName: networkName,
-		MountDirs: mountDirs,
-		BindPorts: bindPorts,
+		SubDomain:       "app.localhost",
+		NetworkName:     networkName,
+		MountDirs:       mountDirs,
+		BindPorts:       bindPorts,
 	}
 
 	err = conn.CreateContainer(routerConfig)

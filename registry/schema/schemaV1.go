@@ -9,20 +9,18 @@ import (
 	"ayayushsharma/rocket/containers"
 )
 
-
 type registryAppV1 struct {
-	Name 				string 	`json:"name"`
-	ArtifactoryUrl 		string 	`json:"artifactoryUrl"`
-	Version 			string 	`json:"version"`
-	HttpPort 			int 	`json:"httpPort"`
-	Hostname 			string 	`json:"hostname"`
+	Name           string `json:"name"`
+	ArtifactoryUrl string `json:"artifactoryUrl"`
+	Version        string `json:"version"`
+	HttpPort       int    `json:"httpPort"`
+	Hostname       string `json:"hostname"`
 }
 
 type registryV1 struct {
-	Version 			int 						`json:"version"`
-	Application 		[]registryAppV1 	`json:"applications"`
+	Version     int             `json:"version"`
+	Application []registryAppV1 `json:"applications"`
 }
-
 
 // Praser for Version 1 registries
 func parseV1Registry(
@@ -30,7 +28,7 @@ func parseV1Registry(
 ) (parsedData []containers.ContainerConfig, err error) {
 	var registry registryV1
 	if err := json.Unmarshal([]byte(registryData), &registry); err != nil {
-		slog.Debug("Registry Unmarshalling failed", "error" ,err)
+		slog.Debug("Registry Unmarshalling failed", "error", err)
 		return nil, err
 	}
 
@@ -48,13 +46,13 @@ func parseV1Registry(
 
 		application := containers.ContainerConfig{
 			ApplicationName: app.Name,
-			ContainerName: containerName,
-			ImageURL: app.ArtifactoryUrl, 
-			ImageVersion: app.Version,
-			SubDomain: hostName,
-			ExposeHttpPort: app.HttpPort,
+			ContainerName:   containerName,
+			ImageURL:        app.ArtifactoryUrl,
+			ImageVersion:    app.Version,
+			SubDomain:       hostName,
+			ExposeHttpPort:  app.HttpPort,
 		}
-		parsedData = append(parsedData, application)		
+		parsedData = append(parsedData, application)
 	}
 
 	return parsedData, nil

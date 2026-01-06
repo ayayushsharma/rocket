@@ -27,7 +27,7 @@ var unregisterCmd = &cobra.Command{
 		// 	slog.Debug("Failed to select application", "error", err)
 		// 	os.Exit(1)
 		// }
-		// 
+		//
 	},
 }
 
@@ -35,11 +35,10 @@ func init() {
 	rootCmd.AddCommand(unregisterCmd)
 }
 
-
 func unregisterApplication(
 	conn containers.Container,
 	containerName string,
-) (err error) { 
+) (err error) {
 	err = conn.StopService(containerName)
 	if err != nil {
 		slog.Debug("Failed to start application", "error", err)
