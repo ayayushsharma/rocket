@@ -10,15 +10,23 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/charmbracelet/huh"
+
+	"ayayushsharma/rocket/common"
 	"ayayushsharma/rocket/constants"
 	"ayayushsharma/rocket/containers"
 	"ayayushsharma/rocket/registry/schema"
 )
 
 type registryPull struct {
-	priority int // lower number means higher priority
-	data     string
-	err      error
+	rank int // lower number means higher priority
+	data string
+	err  error
+}
+
+type appFromRegistry struct {
+	rank int // lower number means higher priority
+	app  *containers.Config
 }
 
 // Returns list of all registries present on the local registry config
@@ -97,9 +105,9 @@ func fetch(
 	if isURL {
 		data, err := fetchOverHTTP(registryURI)
 		results <- registryPull{
-			priority: registryPriority,
-			data:     string(data),
-			err:      err,
+			rank: registryPriority,
+			data: string(data),
+			err:  err,
 		}
 		return
 	}
@@ -109,29 +117,24 @@ func fetch(
 	if isDisk {
 		data, err := fetchOverDisk(registryURI)
 		results <- registryPull{
-			priority: registryPriority,
-			data:     string(data),
-			err:      err,
+			rank: registryPriority,
+			data: string(data),
+			err:  err,
 		}
 		return
 	}
 
 	results <- registryPull{
-		priority: registryPriority,
-		data:     "",
-		err:      err,
+		rank: registryPriority,
+		data: "",
+		err:  err,
 	}
 	slog.Debug("No a valid registry path", "error", registryURI)
 }
 
-type AppsOnRegistry struct {
-	Priority int // lower number means higher priority
-	App      *containers.ContainerConfig
-}
-
 // fetches all registries for available applications
 func FetchRegistries(registryURIs []string) (
-	containerCfgs []AppsOnRegistry,
+	containerCfgs []appFromRegistry,
 ) {
 	var wg sync.WaitGroup
 	results := make(chan registryPull, len(registryURIs))
@@ -156,11 +159,11 @@ func FetchRegistries(registryURIs []string) (
 			slog.Debug("Parsing data from registry failed", "error", err)
 			continue
 		}
-		appsWithPriority := []AppsOnRegistry{}
+		appsWithPriority := []appFromRegistry{}
 		for index := range registryData {
-			appsWithPriority = append(appsWithPriority, AppsOnRegistry{
-				Priority: result.priority,
-				App:      &registryData[index],
+			appsWithPriority = append(appsWithPriority, appFromRegistry{
+				rank: result.rank,
+				app:  &registryData[index],
 			})
 		}
 
@@ -170,4 +173,58 @@ func FetchRegistries(registryURIs []string) (
 	slog.Debug("Finished data pull from all registry")
 
 	return containerCfgs
+}
+
+func SelectApplication(apps []appFromRegistry) (
+	selected containers.Config,
+	err error,
+) {
+	fzfData := []huh.Option[*appFromRegistry]{}
+
+	// deduplicating section
+	dedup := make(map[string]*appFromRegistry)
+
+	for index := range apps {
+		fullImageName := common.ImageWithVersion(
+			apps[index].app.ImageURL,
+			apps[index].app.ImageVersion,
+		)
+		if _, ok := dedup[fullImageName]; ok {
+			if dedup[fullImageName].rank > apps[index].rank {
+				// override the new image
+				dedup[fullImageName] = &apps[index]
+				continue
+			}
+		}
+		dedup[fullImageName] = &apps[index]
+	}
+
+	// mapping section
+	for index := range dedup {
+		fzfData = append(fzfData, huh.Option[*appFromRegistry]{
+			Key: fmt.Sprintf(
+				"%-20s %-10s - %s",
+				dedup[index].app.ApplicationName,
+				dedup[index].app.ImageVersion,
+				dedup[index].app.ImageURL,
+			),
+			Value: dedup[index],
+		})
+	}
+
+	// selection section
+	var selectedAppId *appFromRegistry
+
+	err = huh.NewSelect[*appFromRegistry]().
+		Title("Pick a application").
+		Options(fzfData...).
+		Value(&selectedAppId).
+		Run()
+
+	if err != nil {
+		slog.Debug("Failed to select application", "error", err)
+		return containers.Config{}, err
+	}
+
+	return *selectedAppId.app, nil
 }

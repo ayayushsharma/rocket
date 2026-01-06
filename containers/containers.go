@@ -1,7 +1,7 @@
 package containers
 
 // for loading config
-type ContainerConfig struct {
+type Config struct {
 	// name of the application that will be displayed to the user on the GUI
 	ApplicationName string
 

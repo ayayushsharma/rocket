@@ -1,10 +1,10 @@
 package containers
 
-type Container interface {
+type ContainerManager interface {
 	PullImage(imageName string) error
 	RemoveImage(imageName string) error
 
-	CreateContainer(options ContainerConfig) error
+	CreateContainer(options Config) error
 	RemoveContainer(containerName string, force bool) error
 
 	StartService(containerName string) error
@@ -15,4 +15,8 @@ type Container interface {
 	ListNetworks() ([]string, error)
 	CreateNetwork(networkName string) error
 	NetworkExists(networkName string) (bool, error)
+}
+
+func Manager() (manager ContainerManager, err error) {
+	return connectPodman()
 }

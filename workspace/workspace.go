@@ -1,6 +1,6 @@
 // Handlers for local registrations of applications
 
-package register
+package workspace
 
 import (
 	"encoding/json"
@@ -9,12 +9,9 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/charmbracelet/huh"
-
-	"ayayushsharma/rocket/common"
+	// "ayayushsharma/rocket/common"
 	"ayayushsharma/rocket/constants"
 	"ayayushsharma/rocket/containers"
-	"ayayushsharma/rocket/registry"
 )
 
 type routerData struct {
@@ -27,62 +24,8 @@ var AppAlreadyRegisteredErr error = errors.New("This app is already registered")
 var AppNotRegisteredErr error = errors.New("This app is not registered")
 var NoAppSelectedErr error = errors.New("No app selected for registration")
 
-func SelectApplication(apps []registry.AppsOnRegistry) (
-	selectedContainer containers.ContainerConfig,
-	err error,
-) {
-	fzfData := []huh.Option[*registry.AppsOnRegistry]{}
-
-	// deduplicating section
-	dedup := make(map[string]*registry.AppsOnRegistry)
-
-	for index := range apps {
-		fullImageName := common.ImageWithVersion(
-			apps[index].App.ImageURL,
-			apps[index].App.ImageVersion,
-		)
-		if _, ok := dedup[fullImageName]; ok {
-			if dedup[fullImageName].Priority > apps[index].Priority {
-				// override the new image
-				dedup[fullImageName] = &apps[index]
-				continue
-			}
-		}
-		dedup[fullImageName] = &apps[index]
-	}
-
-	// mapping section
-	for index := range dedup {
-		fzfData = append(fzfData, huh.Option[*registry.AppsOnRegistry]{
-			Key: fmt.Sprintf(
-				"%-20s %-10s - %s",
-				dedup[index].App.ApplicationName,
-				dedup[index].App.ImageVersion,
-				dedup[index].App.ImageURL,
-			),
-			Value: dedup[index],
-		})
-	}
-
-	// selection section
-	var selectedAppId *registry.AppsOnRegistry
-
-	err = huh.NewSelect[*registry.AppsOnRegistry]().
-		Title("Pick a application").
-		Options(fzfData...).
-		Value(&selectedAppId).
-		Run()
-
-	if err != nil {
-		slog.Debug("Failed to select application", "error", err)
-		return containers.ContainerConfig{}, err
-	}
-
-	return *selectedAppId.App, nil
-}
-
-func ReadRegisteredApplications() (
-	registeredApps map[string]containers.ContainerConfig,
+func GetRegistered() (
+	registeredApps map[string]containers.Config,
 	err error,
 ) {
 	data, err := os.ReadFile(constants.RegisteredAppsJson)
@@ -101,8 +44,8 @@ func ReadRegisteredApplications() (
 	return registeredApps, nil
 }
 
-func WriteRegisteredApplications(
-	apps map[string]containers.ContainerConfig,
+func WriteRegisteredApps(
+	apps map[string]containers.Config,
 ) (err error) {
 	jsonData, err := json.MarshalIndent(apps, "", "  ")
 	if err != nil {
@@ -121,7 +64,7 @@ func WriteRegisteredApplications(
 }
 
 func RefreshRouterConf() (err error) {
-	registry, err := ReadRegisteredApplications()
+	registry, err := GetRegistered()
 	if err != nil {
 		slog.Debug("Failed to read locally registered applications", "error", err)
 		return err
@@ -158,8 +101,8 @@ func RefreshRouterConf() (err error) {
 
 }
 
-func RegisterApplicationToConf(container containers.ContainerConfig) (err error) {
-	registry, err := ReadRegisteredApplications()
+func RegisterApplicationToConf(container containers.Config) (err error) {
+	registry, err := GetRegistered()
 	if err != nil {
 		slog.Debug("Failed to read locally registered applications", "error", err)
 		return err
@@ -171,7 +114,7 @@ func RegisterApplicationToConf(container containers.ContainerConfig) (err error)
 
 	registry[container.ContainerName] = container
 
-	err = WriteRegisteredApplications(registry)
+	err = WriteRegisteredApps(registry)
 	if err != nil {
 		slog.Debug("Failed to write to local register of applications", "error", err)
 		return err
@@ -180,7 +123,7 @@ func RegisterApplicationToConf(container containers.ContainerConfig) (err error)
 }
 
 func UnregisterApplicationToConf(containerName string) (err error) {
-	registry, err := ReadRegisteredApplications()
+	registry, err := GetRegistered()
 	if err != nil {
 		slog.Debug("Failed to read locally registered applications", "error", err)
 		return err
@@ -192,7 +135,7 @@ func UnregisterApplicationToConf(containerName string) (err error) {
 
 	delete(registry, containerName)
 
-	err = WriteRegisteredApplications(registry)
+	err = WriteRegisteredApps(registry)
 	if err != nil {
 		slog.Debug("Failed to write to local register of applications", "error", err)
 		return err

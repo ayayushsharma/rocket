@@ -10,8 +10,8 @@ import (
 
 	"ayayushsharma/rocket/constants"
 	"ayayushsharma/rocket/containers"
-	"ayayushsharma/rocket/register"
 	"ayayushsharma/rocket/registry"
+	"ayayushsharma/rocket/workspace"
 )
 
 var registerCmd = &cobra.Command{
@@ -20,7 +20,7 @@ var registerCmd = &cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		slog.Debug("Registering... " + constants.ApplicationName)
-		conn, err := containers.ConnectPodman()
+		conn, err := containers.Manager()
 		if err != nil {
 			slog.Debug("Failed to select application", "error", err)
 			return
@@ -36,7 +36,7 @@ var registerCmd = &cobra.Command{
 		slog.Debug("Pulled data from registries", "data", registries)
 		data := registry.FetchRegistries(registries)
 
-		appToRegister, err := register.SelectApplication(data)
+		appToRegister, err := registry.SelectApplication(data)
 		if err != nil {
 			slog.Debug("Failed to select application", "error", err)
 			return
@@ -61,7 +61,7 @@ var registerCmd = &cobra.Command{
 			return
 		}
 
-		err = register.RegisterApplicationToConf(appToRegister)
+		err = workspace.RegisterApplicationToConf(appToRegister)
 		if err != nil {
 			slog.Debug(
 				"Failed to register application container to configuration",
@@ -71,7 +71,7 @@ var registerCmd = &cobra.Command{
 			return
 		}
 
-		err = register.RefreshRouterConf()
+		err = workspace.RefreshRouterConf()
 		if err != nil {
 			slog.Debug("Failed to register application to routes", "error", err)
 			return

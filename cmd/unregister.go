@@ -3,7 +3,7 @@ package cmd
 import (
 	"ayayushsharma/rocket/constants"
 	"ayayushsharma/rocket/containers"
-	"ayayushsharma/rocket/register"
+	"ayayushsharma/rocket/workspace"
 	"log/slog"
 	// "os"
 
@@ -16,7 +16,7 @@ var unregisterCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		slog.Debug("UnRegistering... " + constants.ApplicationName)
-		// conn, err := containers.ConnectPodman()
+		// conn, err := containers.Manager()
 		// if err != nil {
 		// 	slog.Debug("Failed to select application", "error", err)
 		// 	os.Exit(1)
@@ -36,7 +36,7 @@ func init() {
 }
 
 func unregisterApplication(
-	conn containers.Container,
+	conn containers.ContainerManager,
 	containerName string,
 ) (err error) {
 	err = conn.StopService(containerName)
@@ -45,13 +45,13 @@ func unregisterApplication(
 		return
 	}
 
-	err = conn.RemoveContainer("", true)
+	err = conn.RemoveContainer(containerName, true)
 	if err != nil {
 		slog.Debug("Failed to unregister application container", "error", err)
 		return
 	}
 
-	err = register.UnregisterApplicationToConf(containerName)
+	err = workspace.UnregisterApplicationToConf(containerName)
 	if err != nil {
 		slog.Debug(
 			"Failed to unregister application container to configuration",
@@ -61,7 +61,7 @@ func unregisterApplication(
 		return
 	}
 
-	err = register.RefreshRouterConf()
+	err = workspace.RefreshRouterConf()
 	if err != nil {
 		slog.Debug("Failed to unregister application to routes", "error", err)
 		return

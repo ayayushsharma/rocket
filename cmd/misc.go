@@ -16,7 +16,7 @@ var miscCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		slog.Debug("Launching... " + constants.ApplicationName)
-		// conn, err := containers.ConnectPodman()
+		// conn, err := containers.Manager()
 		// if err != nil {
 		//
 		// }

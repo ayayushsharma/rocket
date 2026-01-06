@@ -107,7 +107,7 @@ func loadDefaultConnection() (string, string, error) {
 	return "", "", errors.New("unrecognized podman connections schema")
 }
 
-func DefaultSocketURI() (string, error) {
+func defaultSocketURI() (string, error) {
 	uri, _, err := loadDefaultConnection()
 	return uri, err
 }
@@ -116,8 +116,8 @@ type PodManContext struct {
 	context.Context
 }
 
-func ConnectPodman() (PodManContext, error) {
-	socketURI, err := DefaultSocketURI()
+func connectPodman() (PodManContext, error) {
+	socketURI, err := defaultSocketURI()
 	if err != nil {
 		slog.Error("Couldn't connect to Podman", "error", err)
 		slog.Error("Check if Podman service is running on the machine")
@@ -173,9 +173,7 @@ func (conn PodManContext) NetworkExists(networkName string) (exists bool, err er
 	return network.Exists(conn, networkName, nil)
 }
 
-func (conn PodManContext) CreateContainer(
-	options ContainerConfig,
-) (err error) {
+func (conn PodManContext) CreateContainer(options Config) (err error) {
 	image := options.ImageURL
 
 	if strings.Trim(options.ImageVersion, " ") != "" {

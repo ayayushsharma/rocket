@@ -14,7 +14,7 @@ var registryCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		slog.Debug("Launching... " + constants.ApplicationName)
-		_, err := containers.ConnectPodman()
+		_, err := containers.Manager()
 		if err != nil {
 
 		}

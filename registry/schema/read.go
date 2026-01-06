@@ -14,7 +14,7 @@ type registrySchema struct {
 type registryReader func(
 	registryData string,
 ) (
-	parsedData []containers.ContainerConfig,
+	parsedData []containers.Config,
 	err error,
 )
 
@@ -24,7 +24,7 @@ var readerMap map[int]registryReader
 // Handles registry versions by itself
 func Parse(
 	registryData string,
-) (parsedData []containers.ContainerConfig, err error) {
+) (parsedData []containers.Config, err error) {
 	var registry registrySchema
 	if err := json.Unmarshal([]byte(registryData), &registry); err != nil {
 		slog.Debug("Failed to get registry version", "error", err)

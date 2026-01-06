@@ -15,8 +15,8 @@ var startCmd = &cobra.Command{
 	Short: "Starts Rocket",
 	Run: func(cmd *cobra.Command, args []string) {
 		slog.Debug("Launching... " + constants.ApplicationName)
-		var conn containers.Container
-		conn, err := containers.ConnectPodman()
+		var conn containers.ContainerManager
+		conn, err := containers.Manager()
 		if err != nil {
 			slog.Debug("Failed to connect to podman. Exiting")
 			os.Exit(1)
@@ -29,7 +29,7 @@ func init() {
 	rootCmd.AddCommand(startCmd)
 }
 
-func start_router(conn containers.Container) (err error) {
+func start_router(conn containers.ContainerManager) (err error) {
 	networkName := viper.GetString("routes.network")
 	slog.Debug("Network found", "name", networkName)
 
@@ -42,7 +42,7 @@ func start_router(conn containers.Container) (err error) {
 		constants.ApplicationPort: 80,
 	}
 
-	routerConfig := containers.ContainerConfig{
+	routerConfig := containers.Config{
 		ImageURL:        "openresty/openresty:alpine",
 		ContainerName:   constants.RouterContainer,
 		ApplicationName: constants.RouterContainer,

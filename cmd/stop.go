@@ -15,8 +15,8 @@ var stopCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		slog.Debug("Stopping... " + constants.ApplicationName)
-		var conn containers.Container
-		conn, err := containers.ConnectPodman()
+		var conn containers.ContainerManager
+		conn, err := containers.Manager()
 		if err != nil {
 			slog.Debug("Failed to connect to podman. Exiting")
 			os.Exit(1)

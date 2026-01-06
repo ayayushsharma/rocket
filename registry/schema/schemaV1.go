@@ -25,7 +25,7 @@ type registryV1 struct {
 // Praser for Version 1 registries
 func parseV1Registry(
 	registryData string,
-) (parsedData []containers.ContainerConfig, err error) {
+) (parsedData []containers.Config, err error) {
 	var registry registryV1
 	if err := json.Unmarshal([]byte(registryData), &registry); err != nil {
 		slog.Debug("Registry Unmarshalling failed", "error", err)
@@ -44,7 +44,7 @@ func parseV1Registry(
 			hostName = hostName + ".localhost"
 		}
 
-		application := containers.ContainerConfig{
+		application := containers.Config{
 			ApplicationName: app.Name,
 			ContainerName:   containerName,
 			ImageURL:        app.ArtifactoryUrl,
