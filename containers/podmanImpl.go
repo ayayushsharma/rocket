@@ -136,20 +136,10 @@ func connectPodman() (PodManContext, error) {
 	return PodManContext{conn}, nil
 }
 
-
-func (conn PodManContext) ImageExists(imageName string) (exists bool, err error) {
-	exists, err = images.Exists(conn, imageName, nil)
-	if err != nil {
-		slog.Debug("Failed to check if container image exists", "error", err)
-		return false, err
-	}
-	return exists, nil
-}
-
 func (conn PodManContext) PullImage(imageName string) error {
 	_, err := images.Pull(conn, imageName, nil)
 	if err != nil {
-		slog.Debug("Failed to pulled container image", "error", err)
+		slog.Debug("Failed to pull container image", "error", err)
 		return err
 	}
 
@@ -169,18 +159,27 @@ func (conn PodManContext) RemoveImage(imageName string) error {
 	return nil
 }
 
-func (conn PodManContext) ListNetworks() (networks []string, err error) {
-	networkList, err := network.List(conn, nil)
-
-	for _, network := range networkList {
-		networks = append(networks, network.Name)
+func (conn PodManContext) ImageExists(imageName string) (exists bool, err error) {
+	exists, err = images.Exists(conn, imageName, nil)
+	if err != nil {
+		slog.Debug("Failed to check if container image exists", "error", err)
+		return false, err
 	}
-
-	return
+	return exists, nil
 }
 
-func (conn PodManContext) NetworkExists(networkName string) (exists bool, err error) {
-	return network.Exists(conn, networkName, nil)
+// func (conn PodManContext) ListContainers() ([]string, error) {
+// 	containerList, err := containers.List(conn, nil);
+// 	if  err != nil {
+// 		return
+// 	}
+//
+// 	return
+// }
+
+func (conn PodManContext) ContainerExists(containerName string) (exists bool, err error) {
+	exists, err = containers.Exists(conn, containerName, nil)
+	return
 }
 
 func (conn PodManContext) CreateContainer(options Config) (err error) {
@@ -268,10 +267,6 @@ func (conn PodManContext) StartService(containerName string) (err error) {
 	return nil
 }
 
-func (conn PodManContext) CreateNetwork(networkName string) (err error) {
-	return nil
-}
-
 func (conn PodManContext) StopService(containerName string) (err error) {
 	if err := containers.Stop(conn, containerName, nil); err != nil {
 		return err
@@ -285,4 +280,22 @@ func (conn PodManContext) PauseService(containerName string) (err error) {
 
 func (conn PodManContext) UpdateService(containerName string) (err error) {
 	return nil
+}
+
+func (conn PodManContext) ListNetworks() (networks []string, err error) {
+	networkList, err := network.List(conn, nil)
+
+	for _, network := range networkList {
+		networks = append(networks, network.Name)
+	}
+
+	return
+}
+
+func (conn PodManContext) CreateNetwork(networkName string) (err error) {
+	return nil
+}
+
+func (conn PodManContext) NetworkExists(networkName string) (exists bool, err error) {
+	return network.Exists(conn, networkName, nil)
 }

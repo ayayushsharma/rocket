@@ -48,7 +48,7 @@ var registerCmd = &cobra.Command{
 
 		if err != nil {
 			var alreadyRegistered *workspace.AppAlreadyRegisteredErr
-			if errors.As(err, &alreadyRegistered){
+			if errors.As(err, &alreadyRegistered) {
 				fmt.Printf(
 					"Already registered as '%s' \n",
 					alreadyRegistered.ContainerName,
@@ -59,6 +59,9 @@ var registerCmd = &cobra.Command{
 			slog.Debug("Failed to register app to workspace", "error", err)
 			return
 		}
+
+		fmt.Println("Application Successfully registered as:")
+		fmt.Println(appToRegister.ContainerName)
 
 		return nil
 	},

@@ -15,7 +15,7 @@ var unregisterCmd = &cobra.Command{
 	Use:   "unregister [container-name]",
 	Short: "unregisters specified containerised application",
 	Args:  cobra.MinimumNArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) (err error){
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		slog.Debug("UnRegistering... " + constants.ApplicationName)
 		conn, err := containers.Manager()
 		if err != nil {

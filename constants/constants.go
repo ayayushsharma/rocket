@@ -13,11 +13,11 @@ const (
 )
 
 var (
-	NginxConfPath      string
-	HomePageDir        string
-	RoutesJson         string
+	NginxConfPath     string
+	HomePageDir       string
+	RoutesJson        string
 	WorkspaceAppsJson string
-	RegistriesPath     string
+	RegistriesPath    string
 )
 
 func init() {

@@ -5,7 +5,7 @@ import (
 )
 
 type workspaceSchema struct {
-	Applications map[string]containers.Config  `json:"applications"`
+	Applications map[string]containers.Config `json:"applications"`
 }
 
 type routerData struct {

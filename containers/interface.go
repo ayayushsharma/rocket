@@ -1,12 +1,14 @@
 package containers
 
 type ContainerManager interface {
-	ImageExists(imageName string) (bool, error)
 	PullImage(imageName string) error
 	RemoveImage(imageName string) error
+	ImageExists(imageName string) (bool, error)
 
+	// ListContainers() ([]string, error)
 	CreateContainer(options Config) error
 	RemoveContainer(containerName string, force bool) error
+	ContainerExists(containerName string) (bool, error)
 
 	StartService(containerName string) error
 	PauseService(containerName string) error

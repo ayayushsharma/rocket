@@ -64,7 +64,6 @@ func updateWorkspace(
 	return nil
 }
 
-
 func GetApps() (
 	workspaceApps map[string]containers.Config,
 	err error,
@@ -76,8 +75,7 @@ func GetApps() (
 	return workspace.Applications, nil
 }
 
-
-func syncRouter() (err error) {
+func SyncRouter() (err error) {
 	registry, err := GetApps()
 	if err != nil {
 		slog.Debug("Failed to read locally registered applications", "error", err)
@@ -136,7 +134,7 @@ func Register(container containers.Config) (err error) {
 		return err
 	}
 
-	err = syncRouter()
+	err = SyncRouter()
 	if err != nil {
 		slog.Debug("Failed to register application to routes", "error", err)
 		return
@@ -164,11 +162,28 @@ func Unregister(containerName string) (err error) {
 		return err
 	}
 
-	err = syncRouter()
+	err = SyncRouter()
 	if err != nil {
 		slog.Debug("Failed to register application to routes", "error", err)
 		return
 	}
 
 	return nil
+}
+
+func GetAppCfg(appName string) (app containers.Config, err error) {
+	allApps, err := GetApps()
+	if err != nil {
+		slog.Debug("Could not get workspace apps", "error", err)
+		return
+	}
+
+	app, ok := allApps[appName]
+
+	if !ok {
+		slog.Debug("App does not exists in workspace")
+		return app, AppNotRegisteredErr
+	}
+
+	return app, nil
 }
