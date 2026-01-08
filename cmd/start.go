@@ -21,7 +21,7 @@ var startCmd = &cobra.Command{
 			slog.Debug("Failed to connect to podman. Exiting")
 			os.Exit(1)
 		}
-		start_router(conn)
+		startRouter(conn)
 	},
 }
 
@@ -29,7 +29,7 @@ func init() {
 	rootCmd.AddCommand(startCmd)
 }
 
-func start_router(conn containers.ContainerManager) (err error) {
+func startRouter(conn containers.ContainerManager) (err error) {
 	networkName := viper.GetString("routes.network")
 	slog.Debug("Network found", "name", networkName)
 

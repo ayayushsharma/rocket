@@ -35,7 +35,6 @@ func GetAll() (registries []string, err error) {
 
 	data, err := os.ReadFile(registriesFile)
 	if err != nil {
-		slog.Debug("Could not read registry file", "error", err)
 		return nil, err
 	}
 
@@ -60,15 +59,13 @@ func GetAll() (registries []string, err error) {
 func fetchOverHTTP(url string) (data []byte, err error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		err = fmt.Errorf("Error fetching %s: %v", url, err)
-		return
+		return nil, fmt.Errorf("Error fetching %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 
 	data, err = io.ReadAll(resp.Body)
 	if err != nil {
-		err = fmt.Errorf("Error reading body from %s: %v", url, err)
-		return
+		return nil, fmt.Errorf("Error reading body from %s: %w", url, err)
 	}
 
 	return data, nil
@@ -78,11 +75,9 @@ func fetchOverHTTP(url string) (data []byte, err error) {
 func fetchOverDisk(path string) (data []byte, err error) {
 	data, err = os.ReadFile(path)
 	if err != nil {
-		slog.Debug("Could not read registry file", "error", err)
-		err = fmt.Errorf("Could not read registry from %s: %v", path, err)
-		return
+		return nil, fmt.Errorf("Could not read registry from %s: %v", path, err)
 	}
-	return
+	return data, nil
 }
 
 // Fetches registry data over any types of registry type
@@ -222,7 +217,6 @@ func SelectApplication(apps []appFromRegistry) (
 		Run()
 
 	if err != nil {
-		slog.Debug("Failed to select application", "error", err)
 		return containers.Config{}, err
 	}
 

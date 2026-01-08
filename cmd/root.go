@@ -57,9 +57,10 @@ func initializeConfig(cmd *cobra.Command) error {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "*", "-", "*"))
 	viper.AutomaticEnv()
 	if cfgFile != "" {
+		slog.Debug("Picking config from CLI flag")
 		viper.SetConfigFile(cfgFile)
 	} else {
-		slog.Debug("Mac Os config settings")
+		slog.Debug("Picking configs from default location")
 		homeDir, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 

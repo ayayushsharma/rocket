@@ -43,7 +43,6 @@ var registerCmd = &cobra.Command{
 		networkName := viper.GetString("routes.network")
 		slog.Debug("Network found", "name", networkName)
 		appToRegister.NetworkName = networkName
-		slog.Debug("App Data", "data", appToRegister)
 		err = workspace.Register(appToRegister)
 
 		if err != nil {
@@ -53,7 +52,7 @@ var registerCmd = &cobra.Command{
 					"Already registered as '%s' \n",
 					alreadyRegistered.ContainerName,
 				)
-				fmt.Println("Edit it's conf and sync to get desired app state'")
+				fmt.Println("Edit it's conf and sync to get desired app state")
 				return nil
 			}
 			slog.Debug("Failed to register app to workspace", "error", err)

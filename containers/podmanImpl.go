@@ -128,7 +128,6 @@ func connectPodman() (PodManContext, error) {
 	conn, err := bindings.NewConnection(context.Background(), socketURI)
 
 	if err != nil {
-		slog.Error("Couldn't connect to podman service", "error", err)
 		return PodManContext{nil}, err
 	}
 
@@ -139,10 +138,8 @@ func connectPodman() (PodManContext, error) {
 func (conn PodManContext) PullImage(imageName string) error {
 	_, err := images.Pull(conn, imageName, nil)
 	if err != nil {
-		slog.Debug("Failed to pull container image", "error", err)
 		return err
 	}
-
 	slog.Debug("Pulled Podman image", "name", imageName)
 	return nil
 }
@@ -151,21 +148,15 @@ func (conn PodManContext) RemoveImage(imageName string) error {
 	imageList := []string{imageName}
 	report, errs := images.Remove(conn, imageList, nil)
 	if errs != nil {
-		slog.Debug("Failed to remove images")
 		return errs[0]
 	}
-	slog.Info("Image removal report", "report", report)
-
+	slog.Debug("Image removal report", "report", report)
 	return nil
 }
 
 func (conn PodManContext) ImageExists(imageName string) (exists bool, err error) {
 	exists, err = images.Exists(conn, imageName, nil)
-	if err != nil {
-		slog.Debug("Failed to check if container image exists", "error", err)
-		return false, err
-	}
-	return exists, nil
+	return
 }
 
 // func (conn PodManContext) ListContainers() ([]string, error) {

@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+
 	// "sync"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"ayayushsharma/rocket/common"
 	"ayayushsharma/rocket/containers"
@@ -18,13 +20,21 @@ var launchCmd = &cobra.Command{
 	Short: "Launches specified application",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		// launchAll := false
+		conn, err := containers.Manager()
+		if err != nil {
+			slog.Debug("Failed to connect to podman. Exiting")
+			return
+		}
+
+		isLaunchAll := viper.GetBool("all")
+		if isLaunchAll {
+			launchAll(conn)
+			return
+		}
+
 		if len(args) > 0 {
-			// var wg sync.WaitGroup
 			for _, appName := range args {
-				// wg.Go(func() {
-				launchApp(appName)
-				// })
+				launchApp(conn, appName)
 			}
 		}
 
@@ -34,15 +44,11 @@ var launchCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(launchCmd)
+	launchCmd.Flags().Bool("all", false, "Launch all the registered apps")
 }
 
-func launchApp(appName string) (err error) {
+func launchApp(conn containers.ContainerManager, appName string) (err error) {
 	slog.Debug("Launching... " + appName)
-	conn, err := containers.Manager()
-	if err != nil {
-		slog.Debug("Failed to connect to podman. Exiting")
-		return
-	}
 
 	exists, err := conn.ContainerExists(appName)
 
@@ -96,4 +102,21 @@ func createApp(conn containers.ContainerManager, appName string) (err error) {
 	}
 
 	return nil
+}
+
+func launchAll(conn containers.ContainerManager) (err error) {
+	apps, err := workspace.GetApps()
+	if err != nil {
+		return err
+	}
+
+	var storeErr error
+	for appName := range apps {
+		err = launchApp(conn, appName)
+		if err != nil {
+			storeErr = err
+		}
+	}
+
+	return storeErr
 }
