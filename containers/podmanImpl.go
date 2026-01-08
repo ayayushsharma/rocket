@@ -112,6 +112,18 @@ func defaultSocketURI() (string, error) {
 	return uri, err
 }
 
+func defaultContainerSSHKey() (sshKeyPath string, err error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+
+	sshKeyPath = filepath.Join(
+		homeDir, "/.local/share/containers/podman/machine/machine",
+	)
+	return
+}
+
 type PodManContext struct {
 	context.Context
 }
@@ -125,7 +137,20 @@ func connectPodman() (PodManContext, error) {
 	}
 
 	slog.Debug("Socket URI found", "uri", socketURI)
-	conn, err := bindings.NewConnection(context.Background(), socketURI)
+
+	sshkeyPath, err := defaultContainerSSHKey()
+	if err != nil {
+		return PodManContext{nil}, err
+	}
+	slog.Debug("Container SSH Key", "key", sshkeyPath)
+
+	conn, err := bindings.NewConnectionWithOptions(
+		context.Background(),
+		bindings.Options{
+			URI: socketURI,
+			Identity: sshkeyPath,
+		},
+	)
 
 	if err != nil {
 		return PodManContext{nil}, err

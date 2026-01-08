@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"ayayushsharma/rocket/constants"
-	// "ayayushsharma/rocket/containers"
+	"ayayushsharma/rocket/containers"
 	"ayayushsharma/rocket/registry"
 	"fmt"
 	"log/slog"
@@ -16,14 +16,14 @@ var miscCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		slog.Debug("Launching... " + constants.ApplicationName)
-		// conn, err := containers.Manager()
-		// if err != nil {
-		//
-		// }
-		// networks, _ := conn.ListNetworks()
-		// for _, val := range networks {
-		// 	fmt.Println(val)
-		// }
+		conn, err := containers.Manager()
+		if err != nil {
+
+		}
+		networks, _ := conn.ListNetworks()
+		for _, val := range networks {
+			fmt.Println(val)
+		}
 
 		// conn.CreateContainer(
 		// 	containers.ContainerCreateOptions{
