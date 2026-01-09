@@ -41,7 +41,7 @@ jobs:
           set -euo pipefail
 
           TAG="${{ github.ref_name }}"
-          BIN_NAME="rocket-router"
+          BIN_NAME="rocket"
           PKG_PATH="./"  # <-- change to your main package path if needed
 
           # Build binary
