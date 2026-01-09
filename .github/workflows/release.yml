@@ -1,0 +1,152 @@
+name: Build and Release (Go binaries + tarballs)
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    name: Build • ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, darwin]
+        goarch: [amd64, arm64]
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go (from go.mod)
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'  # Automatically uses the version specified in go.mod
+
+      - name: Restore dependencies
+        run: go mod download
+
+      - name: Build and package
+        shell: bash
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0  # set to 1 if your project relies on cgo
+        run: |
+          set -euo pipefail
+
+          TAG="${{ github.ref_name }}"
+          BIN_NAME="rocket"
+          PKG_PATH="./"  # <-- change to your main package path if needed
+
+          # Build binary
+          mkdir -p build
+          go version
+          go build \
+            -trimpath \
+            -ldflags "-s -w -X main.version=${TAG}" \
+            -o "build/${BIN_NAME}-${GOOS}-${GOARCH}" \
+            "${PKG_PATH}"
+
+          # Stage archive contents
+          STAGE="rocket-${TAG}-${GOOS}-${GOARCH}"
+          rm -rf "${STAGE}"
+          mkdir -p "${STAGE}"
+
+          # Place binary in archive (no suffix inside)
+          cp "build/${BIN_NAME}-${GOOS}-${GOARCH}" "${STAGE}/${BIN_NAME}"
+          chmod +x "${STAGE}/${BIN_NAME}"
+
+          # Include resources and docs if present
+          if [[ -d resources ]]; then cp -r resources "${STAGE}/"; fi
+          [[ -f LICENSE ]] && cp LICENSE "${STAGE}/"
+          [[ -f README.md ]] && cp README.md "${STAGE}/"
+
+          # Create reproducible tarball
+          TAR="${STAGE}.tar.gz"
+          tar \
+            --sort=name \
+            --owner=0 --group=0 --numeric-owner \
+            --mtime='UTC 2020-01-01' \
+            -czf "${TAR}" "${STAGE}"
+
+          # Checksum
+          sha256sum "${TAR}" > "${TAR}.sha256"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rocket-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            rocket-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+            rocket-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.sha256
+
+  package:
+    name: Package resources (optional)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build source/resources tarball
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="${{ github.ref_name }}"
+          STAGE="rocket-${TAG}"
+          rm -rf "${STAGE}"
+          mkdir -p "${STAGE}"
+
+          if [[ -d resources ]]; then cp -r resources "${STAGE}/"; fi
+          [[ -f LICENSE ]] && cp LICENSE "${STAGE}/"
+          [[ -f README.md ]] && cp README.md "${STAGE}/"
+
+          TAR="${STAGE}.tar.gz"
+          tar \
+            --sort=name \
+            --owner=0 --group=0 --numeric-owner \
+            --mtime='UTC 2020-01-01' \
+            -czf "${TAR}" "${STAGE}"
+
+          sha256sum "${TAR}" > "${TAR}.sha256"
+
+      - name: Upload resources artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rocket-${{ github.ref_name }}-resources
+          path: |
+            rocket-${{ github.ref_name }}.tar.gz
+            rocket-${{ github.ref_name }}.tar.gz.sha256
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    needs: [build, package]
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./dist
+
+      - name: Publish Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/**/rocket-*.tar.gz
+            dist/**/rocket-*.tar.gz.sha256
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
