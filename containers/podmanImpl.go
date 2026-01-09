@@ -309,7 +309,8 @@ func (conn PodManContext) ListNetworks() (networks []string, err error) {
 }
 
 func (conn PodManContext) CreateNetwork(networkName string) (err error) {
-	return nil
+	_, err = network.Create(conn, &nettypes.Network{Name: networkName})
+	return err
 }
 
 func (conn PodManContext) NetworkExists(networkName string) (exists bool, err error) {

@@ -30,8 +30,33 @@ func init() {
 }
 
 func startRouter(conn containers.ContainerManager) (err error) {
+	imageURL := "openresty/openresty:alpine"
+	imageExists, err := conn.ImageExists(imageURL)
+	if err != nil {
+		return
+	}
+
+	if !imageExists {
+		if err = conn.PullImage(imageURL); err != nil {
+			return err
+		}
+		slog.Debug("Pulled router image")
+	}
+
 	networkName := viper.GetString("routes.network")
-	slog.Debug("Network found", "name", networkName)
+	slog.Debug("Network found in config", "name", networkName)
+
+	networkExists, err := conn.NetworkExists(networkName);
+	if  err != nil {
+		return
+	}
+
+	if !networkExists {
+		if err = conn.CreateNetwork(networkName); err != nil {
+			return err
+		}
+		slog.Debug("Created Network", "name", networkName)
+	}
 
 	mountDirs := map[string]string{
 		constants.NginxConfPath: "/usr/local/openresty/nginx/conf/nginx.conf",
@@ -43,7 +68,7 @@ func startRouter(conn containers.ContainerManager) (err error) {
 	}
 
 	routerConfig := containers.Config{
-		ImageURL:        "openresty/openresty:alpine",
+		ImageURL:imageURL,
 		ContainerName:   constants.RouterContainer,
 		ApplicationName: constants.RouterContainer,
 		SubDomain:       "app.localhost",
@@ -55,6 +80,7 @@ func startRouter(conn containers.ContainerManager) (err error) {
 	err = conn.CreateContainer(routerConfig)
 	if err != nil {
 		slog.Debug("Could not create router container", "error", err)
+		return
 	}
 	slog.Debug("Created router successfully")
 
