@@ -12,8 +12,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        goos: [linux, darwin]
-        goarch: [amd64, arm64]
+        include:
+          - goos: linux   # amd64
+            goarch: amd64
+            cgo: "1"
+          - goos: linux   # arm64
+            goarch: arm64
+            cgo: "1"
+          - goos: darwin  # amd64
+            goarch: amd64
+            cgo: "0"
+          - goos: darwin  # arm64
+            goarch: arm64
+            cgo: "0"
     permissions:
       contents: read
 
@@ -28,6 +39,16 @@ jobs:
         with:
           go-version-file: 'go.mod'  # Automatically uses the version specified in go.mod
 
+      - name: Install gpgme dependencies (Linux only)
+        if: matrix.goos == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pkg-config \
+            libgpgme-dev \
+            libassuan-dev \
+            libgpg-error-dev
+
       - name: Restore dependencies
         run: go mod download
 
@@ -36,7 +57,7 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: 0  # set to 1 if your project relies on cgo
+          CGO_ENABLED: ${{ matrix.cgo }}
         run: |
           set -euo pipefail
 
