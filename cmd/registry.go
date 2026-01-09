@@ -1,11 +1,12 @@
 package cmd
 
 import (
-	"ayayushsharma/rocket/constants"
-	"ayayushsharma/rocket/containers"
 	"log/slog"
 
 	"github.com/spf13/cobra"
+
+	"ayayushsharma/rocket/constants"
+	"ayayushsharma/rocket/containers"
 )
 
 var registryCmd = &cobra.Command{

@@ -48,7 +48,7 @@ func init() {
 		&cfgFile,
 		"config",
 		"",
-		"config file (default is $XDG_CONFIG_HOME/rocket/rocket.yaml)",
+		"config file (default is $XDG_CONFIG_HOME/rocket/config.yaml)",
 	)
 }
 
@@ -61,8 +61,7 @@ func initializeConfig(cmd *cobra.Command) error {
 		viper.SetConfigFile(cfgFile)
 	} else {
 		slog.Debug("Picking configs from default location")
-		homeDir, err := os.UserHomeDir()
-		cobra.CheckErr(err)
+		homeDir := constants.UserHomeDir
 
 		viper.AddConfigPath(".")
 		viper.AddConfigPath(

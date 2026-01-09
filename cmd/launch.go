@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-
-	// "sync"
+	"slices"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -34,12 +33,13 @@ var launchCmd = &cobra.Command{
 
 		if len(args) > 0 {
 			for _, appName := range args {
-				launchApp(conn, appName)
+				launchApp(conn, common.CompleteAppName(appName))
 			}
 		}
 
 		return nil
 	},
+	ValidArgsFunction: launchAppCompletionFn,
 }
 
 func init() {
@@ -119,4 +119,48 @@ func launchAll(conn containers.ContainerManager) (err error) {
 	}
 
 	return storeErr
+}
+
+func launchAppCompletionFn(_ *cobra.Command, _ []string, toComplete string) (
+	completion []cobra.Completion,
+	shellDirective cobra.ShellCompDirective,
+) {
+	shellDirective = cobra.ShellCompDirectiveNoFileComp
+	runningRockets := []string{}
+	var conn containers.ContainerManager
+
+	conn, err := containers.Manager()
+	if err != nil {
+		return
+	}
+
+	runningApps, err := conn.ListContainers()
+	if err != nil {
+		return
+	}
+
+	workspaceApps, err := workspace.GetApps()
+	if err != nil {
+		return
+	}
+
+	for workspaceApp := range workspaceApps {
+		if !slices.Contains(runningApps, workspaceApp) {
+			runningRockets = append(
+				runningRockets, common.ShortenAppName(workspaceApp),
+			)
+		}
+	}
+
+	if len(toComplete) == 0 {
+		return runningRockets, shellDirective
+	}
+
+	for _, rocketApp := range runningRockets {
+		if toComplete == rocketApp[:len(toComplete)] {
+			completion = append(completion, rocketApp)
+		}
+	}
+
+	return
 }

@@ -13,10 +13,10 @@ import (
 
 var unregisterCmd = &cobra.Command{
 	Use:   "unregister [container-name]",
-	Short: "unregisters specified containerised application",
+	Short: "Removes specified containerised application",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		slog.Debug("UnRegistering... " + constants.ApplicationName)
+		slog.Debug("Unregistering... " + constants.ApplicationName)
 		conn, err := containers.Manager()
 		if err != nil {
 			slog.Debug("Failed to select application", "error", err)
@@ -35,7 +35,11 @@ var unregisterCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(unregisterCmd)
-	unregisterCmd.Flags().Bool("force", false, "to forcefully unregister an app")
+	unregisterCmd.Flags().Bool(
+		"force",
+		false,
+		"to forcefully unregister an app. Not recommended if other apps can use the image",
+	)
 }
 
 func unregisterApplication(

@@ -5,7 +5,7 @@ type ContainerManager interface {
 	RemoveImage(imageName string) error
 	ImageExists(imageName string) (bool, error)
 
-	// ListContainers() ([]string, error)
+	ListContainers() ([]string, error)
 	CreateContainer(options Config) error
 	RemoveContainer(containerName string, force bool) error
 	ContainerExists(containerName string) (bool, error)

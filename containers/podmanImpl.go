@@ -15,9 +15,10 @@ import (
 	"github.com/containers/podman/v6/pkg/bindings/images"
 	"github.com/containers/podman/v6/pkg/bindings/network"
 	"github.com/containers/podman/v6/pkg/specgen"
-
 	spec "github.com/opencontainers/runtime-spec/specs-go"
 	nettypes "go.podman.io/common/libnetwork/types"
+
+	"ayayushsharma/rocket/constants"
 )
 
 type connectionFileV2 struct {
@@ -48,18 +49,10 @@ func connectionsPath() (string, error) {
 		return p, nil
 	}
 
-	xdgHome := os.Getenv("XDG_CONFIG_HOME")
-	var base string
-	if xdgHome != "" {
-		base = xdgHome
-	} else {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("cannot resolve home dir: %w", err)
-		}
-		base = filepath.Join(home, ".config")
-	}
-	return filepath.Join(base, "containers", "podman-connections.json"), nil
+	userConfigPath := constants.UserConfigDir
+	return filepath.Join(
+		userConfigPath, "containers", "podman-connections.json",
+	), nil
 }
 
 // loadDefaultConnection reads the file and returns (uri, identity).
@@ -113,11 +106,7 @@ func defaultSocketURI() (string, error) {
 }
 
 func defaultContainerSSHKey() (sshKeyPath string, err error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return
-	}
-
+	homeDir := constants.UserHomeDir
 	sshKeyPath = filepath.Join(
 		homeDir, "/.local/share/containers/podman/machine/machine",
 	)
@@ -147,7 +136,7 @@ func connectPodman() (PodManContext, error) {
 	conn, err := bindings.NewConnectionWithOptions(
 		context.Background(),
 		bindings.Options{
-			URI: socketURI,
+			URI:      socketURI,
 			Identity: sshkeyPath,
 		},
 	)
@@ -184,16 +173,24 @@ func (conn PodManContext) ImageExists(imageName string) (exists bool, err error)
 	return
 }
 
-// func (conn PodManContext) ListContainers() ([]string, error) {
-// 	containerList, err := containers.List(conn, nil);
-// 	if  err != nil {
-// 		return
-// 	}
-//
-// 	return
-// }
+func (conn PodManContext) ListContainers() (
+	containerNames []string, err error,
+) {
+	containerList, err := containers.List(conn, nil)
+	if err != nil {
+		return
+	}
 
-func (conn PodManContext) ContainerExists(containerName string) (exists bool, err error) {
+	for _, cont := range containerList {
+		containerNames = append(containerNames, cont.Names...)
+	}
+
+	return
+}
+
+func (conn PodManContext) ContainerExists(containerName string) (
+	exists bool, err error,
+) {
 	exists, err = containers.Exists(conn, containerName, nil)
 	return
 }
@@ -268,7 +265,9 @@ func (conn PodManContext) CreateContainer(options Config) (err error) {
 	return nil
 }
 
-func (conn PodManContext) RemoveContainer(containerName string, force bool) (err error) {
+func (conn PodManContext) RemoveContainer(containerName string, force bool) (
+	err error,
+) {
 	options := containers.RemoveOptions{
 		Force: &force,
 	}
@@ -313,6 +312,8 @@ func (conn PodManContext) CreateNetwork(networkName string) (err error) {
 	return err
 }
 
-func (conn PodManContext) NetworkExists(networkName string) (exists bool, err error) {
+func (conn PodManContext) NetworkExists(networkName string) (
+	exists bool, err error,
+) {
 	return network.Exists(conn, networkName, nil)
 }

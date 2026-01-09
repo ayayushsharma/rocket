@@ -13,6 +13,8 @@ const (
 )
 
 var (
+	UserHomeDir       string
+	UserConfigDir     string
 	NginxConfPath     string
 	HomePageDir       string
 	RoutesJson        string
@@ -21,23 +23,27 @@ var (
 )
 
 func init() {
-	homeDir, err := os.UserHomeDir()
+	userHomeDir, err := os.UserHomeDir()
 	if err != nil {
-		slog.Debug("Could not get user home dir", "error", err)
+		slog.Error("Could not get user home dir", "error", err)
+		panic(err)
 	}
-	configPath := filepath.Join(
-		homeDir,
-		".config",
-		ApplicationName,
-	)
 
-	slog.Debug("Default Config Dir", "path", configPath)
+	userConfigPath := os.Getenv("XDG_CONFIG_HOME")
+	if userConfigPath == "" {
+		userConfigPath = filepath.Join(userHomeDir, ".config")
+	}
 
-	NginxConfPath = filepath.Join(configPath, "nginx/nginx.conf")
-	HomePageDir = filepath.Join(configPath, "home-page")
+	rocketConfig := filepath.Join(userConfigPath, ApplicationName)
+	slog.Debug("Default Config Dir", "path", rocketConfig)
+
+	UserHomeDir = userHomeDir
+	UserConfigDir = userConfigPath
+	NginxConfPath = filepath.Join(rocketConfig, "nginx/nginx.conf")
+	HomePageDir = filepath.Join(rocketConfig, "home-page")
 	RoutesJson = filepath.Join(HomePageDir, "static/application.json")
-	WorkspaceAppsJson = filepath.Join(configPath, "registered.rockets.json")
-	RegistriesPath = filepath.Join(configPath, "registries")
+	WorkspaceAppsJson = filepath.Join(rocketConfig, "workspace.rockets.json")
+	RegistriesPath = filepath.Join(rocketConfig, "registries")
 
 	slog.Debug(
 		"Default state paths",
