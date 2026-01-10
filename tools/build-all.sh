@@ -114,7 +114,7 @@ for row in "${TARGETS[@]}"; do
 		-ldflags "-s -w -X main.version=${TAG}" \
 		-o "${OUT_BIN}" "${PKG_PATH}"
 
-	STAGE="/work/build/pack/rocket-${TAG}-${GOOS}-${GOARCH}"
+	STAGE="/work/build/pack/rocket-${GOOS}-${GOARCH}"
 	rm -rf "${STAGE}"
 	mkdir -p "${STAGE}"
 	cp "${OUT_BIN}" "${STAGE}/${BIN_NAME}"
@@ -124,9 +124,9 @@ for row in "${TARGETS[@]}"; do
 	[[ -f "/work/LICENSE" ]] && cp "/work/LICENSE" "${STAGE}/"
 	[[ -f "/work/README.md" ]] && cp "/work/README.md" "${STAGE}/"
 
-	TAR="/out/rocket-${TAG}-${GOOS}-${GOARCH}.tar.gz"
+	TAR="/out/rocket-${GOOS}-${GOARCH}.tar.gz"
 	tar --sort=name --owner=0 --group=0 --numeric-owner --mtime='UTC 2020-01-01' \
-		-czf "${TAR}" -C "/work/build/pack" "rocket-${TAG}-${GOOS}-${GOARCH}"
+		-czf "${TAR}" -C "/work/build/pack" "rocket-${GOOS}-${GOARCH}"
 	sha256sum "${TAR}" >"${TAR}.sha256"
 	echo "==> Wrote: ${TAR}"
 done
