@@ -1,173 +1,82 @@
-name: Build and Release (Go binaries + tarballs)
+name: Release
 
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v*'  # e.g., v1.2.3
+  workflow_dispatch:  # allow manual triggering
+
+permissions:
+  contents: write
+
+env:
+  VERSION_TAG: ${{ github.ref_name }}
+  BIN_NAME: rocket
 
 jobs:
-  build:
-    name: Build • ${{ matrix.goos }}/${{ matrix.goarch }}
+  build-and-release:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - goos: linux   # amd64
-            goarch: amd64
-            cgo: "1"
-          - goos: linux   # arm64
-            goarch: arm64
-            cgo: "1"
-          - goos: darwin  # amd64
-            goarch: amd64
-            cgo: "0"
-          - goos: darwin  # arm64
-            goarch: arm64
-            cgo: "0"
-    permissions:
-      contents: read
+    timeout-minutes: 30
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Setup Go (from go.mod)
-        uses: actions/setup-go@v5
+      # Optional: Cache Go module downloads used during image build
+      - name: Cache Go mod (best-effort; speeds up image build if Docker reuses layers)
+        uses: actions/cache@v4
         with:
-          go-version-file: 'go.mod'  # Automatically uses the version specified in go.mod
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: gomod-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
 
-      - name: Install gpgme dependencies (Linux only)
-        if: matrix.goos == 'linux'
+      - name: Set up Podman (container runtime)
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Build rocket-builder image
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            pkg-config \
-            libgpgme-dev \
-            libassuan-dev \
-            libgpg-error-dev
+          podman build -f Containerfile -t rocket-builder .
 
-      - name: Restore dependencies
-        run: go mod download
+      - name: Prepare dist directory
+        run: |
+          rm -rf dist
+          mkdir -p dist
 
-      - name: Build and package
-        shell: bash
+      - name: Run containerized cross-build
+        run: |
+          podman run --rm \
+            -v "$PWD:/work" \
+            -v "$PWD/dist:/out" \
+            rocket-builder \
+            --bin "${BIN_NAME}" \
+            --pkg ./ \
+            --tag "${VERSION_TAG}"
+
+      - name: List artifacts
+        run: ls -lh dist
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION_TAG }}
+          name: ${{ env.VERSION_TAG }}
+          draft: false
+          prerelease: false
         env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-          CGO_ENABLED: ${{ matrix.cgo }}
-        run: |
-          set -euo pipefail
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          TAG="${{ github.ref_name }}"
-          BIN_NAME="rocket"
-          PKG_PATH="./"  # <-- change to your main package path if needed
-
-          # Build binary
-          mkdir -p build
-          go version
-          go build \
-            -trimpath \
-            -ldflags "-s -w -X main.version=${TAG}" \
-            -o "build/${BIN_NAME}-${GOOS}-${GOARCH}" \
-            "${PKG_PATH}"
-
-          # Stage archive contents
-          STAGE="rocket-${TAG}-${GOOS}-${GOARCH}"
-          rm -rf "${STAGE}"
-          mkdir -p "${STAGE}"
-
-          # Place binary in archive (no suffix inside)
-          cp "build/${BIN_NAME}-${GOOS}-${GOARCH}" "${STAGE}/${BIN_NAME}"
-          chmod +x "${STAGE}/${BIN_NAME}"
-
-          # Include resources and docs if present
-          if [[ -d resources ]]; then cp -r resources "${STAGE}/"; fi
-          [[ -f LICENSE ]] && cp LICENSE "${STAGE}/"
-          [[ -f README.md ]] && cp README.md "${STAGE}/"
-
-          # Create reproducible tarball
-          TAR="${STAGE}.tar.gz"
-          tar \
-            --sort=name \
-            --owner=0 --group=0 --numeric-owner \
-            --mtime='UTC 2020-01-01' \
-            -czf "${TAR}" "${STAGE}"
-
-          # Checksum
-          sha256sum "${TAR}" > "${TAR}.sha256"
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: rocket-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: |
-            rocket-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
-            rocket-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz.sha256
-
-  package:
-    name: Package resources (optional)
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Build source/resources tarball
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          TAG="${{ github.ref_name }}"
-          STAGE="rocket-${TAG}"
-          rm -rf "${STAGE}"
-          mkdir -p "${STAGE}"
-
-          if [[ -d resources ]]; then cp -r resources "${STAGE}/"; fi
-          [[ -f LICENSE ]] && cp LICENSE "${STAGE}/"
-          [[ -f README.md ]] && cp README.md "${STAGE}/"
-
-          TAR="${STAGE}.tar.gz"
-          tar \
-            --sort=name \
-            --owner=0 --group=0 --numeric-owner \
-            --mtime='UTC 2020-01-01' \
-            -czf "${TAR}" "${STAGE}"
-
-          sha256sum "${TAR}" > "${TAR}.sha256"
-
-      - name: Upload resources artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: rocket-${{ github.ref_name }}-resources
-          path: |
-            rocket-${{ github.ref_name }}.tar.gz
-            rocket-${{ github.ref_name }}.tar.gz.sha256
-
-  release:
-    name: Create GitHub Release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    needs: [build, package]
-
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: ./dist
-
-      - name: Publish Release and upload assets
+      - name: Upload artifacts to Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/**/rocket-*.tar.gz
-            dist/**/rocket-*.tar.gz.sha256
-          generate_release_notes: true
-          prerelease: ${{ contains(github.ref_name, '-') }}
+            dist/*.tar.gz
+            dist/*.tar.gz.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

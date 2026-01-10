@@ -1,5 +1,6 @@
 [tools]
 go = "1.25.5"
+shfmt = "latest"
 
 [env]
 _.path = ["./build"]
@@ -14,4 +15,4 @@ run = "go build -o ~/bin/rocket -tags=remote -ldflags '-s -w'"
 
 [tasks.format]
 description = "Format codebase"
-run = "gofmt -w ."
+run = "gofmt -w . && shfmt -w ."
