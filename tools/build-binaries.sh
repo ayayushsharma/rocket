@@ -61,12 +61,13 @@ go mod download
 # Override by exporting TARGETS (same "GOOS GOARCH CGO" per line) if needed.
 read -r -d '' DEFAULT_TARGETS <<'EOS' || true
 linux amd64 1
-linux arm64 0
-darwin amd64 0
 darwin arm64 0
 windows amd64 0
-windows arm64 0
 EOS
+
+# darwin amd64 0
+# linux arm64 0
+# windows arm64 0
 
 IFS=$'\n' read -r -d '' -a TARGETS <<<"${TARGETS_OVERRIDE:-${DEFAULT_TARGETS}}" || true
 
@@ -131,7 +132,7 @@ for row in "${TARGETS[@]}"; do
 	echo "==> Wrote: ${OUTPUT_PATH}"
 done
 
-echo "Packaging Router Configs"
+echo "==> Packaging Router Configs"
 STAGE="/work/build/pack/rocket-router-data"
 
 mkdir -p "$STAGE"
@@ -141,7 +142,7 @@ if [[ -d "/work/resources" ]]; then cp -r "/work/resources" "${STAGE}/"; fi
 [[ -f "/work/README.md" ]] && cp "/work/README.md" "${STAGE}/"
 tar --sort=name --owner=0 --group=0 --numeric-owner --mtime='UTC 2020-01-01' \
 	-czf "${TAR}" -C "/work/build/pack" "rocket-router-data"
-echo "Packaged Router Configs"
+sha256sum "${TAR}" >"${TAR}.sha256"
 
 echo "==> All artifacts in /out:"
 ls -lh /out
