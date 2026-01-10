@@ -64,6 +64,8 @@ linux amd64 1
 linux arm64 0
 darwin amd64 0
 darwin arm64 0
+windows amd64 0
+windows arm64 0
 EOS
 
 IFS=$'\n' read -r -d '' -a TARGETS <<<"${TARGETS_OVERRIDE:-${DEFAULT_TARGETS}}" || true
@@ -114,22 +116,32 @@ for row in "${TARGETS[@]}"; do
 		-ldflags "-s -w -X main.version=${TAG}" \
 		-o "${OUT_BIN}" "${PKG_PATH}"
 
-	STAGE="/work/build/pack/rocket-${GOOS}-${GOARCH}"
-	rm -rf "${STAGE}"
-	mkdir -p "${STAGE}"
-	cp "${OUT_BIN}" "${STAGE}/${BIN_NAME}"
-	chmod +x "${STAGE}/${BIN_NAME}"
+	OUTPUT_PATH="/out/${BIN_NAME}-${GOOS}-${GOARCH}"
+	if [[ "${GOOS}" == "windows" ]]; then
+		OUTPUT_PATH="${OUTPUT_PATH}.exe"
+	fi
 
-	if [[ -d "/work/resources" ]]; then cp -r "/work/resources" "${STAGE}/"; fi
-	[[ -f "/work/LICENSE" ]] && cp "/work/LICENSE" "${STAGE}/"
-	[[ -f "/work/README.md" ]] && cp "/work/README.md" "${STAGE}/"
+	cp "${OUT_BIN}" "${OUTPUT_PATH}"
 
-	TAR="/out/rocket-${GOOS}-${GOARCH}.tar.gz"
-	tar --sort=name --owner=0 --group=0 --numeric-owner --mtime='UTC 2020-01-01' \
-		-czf "${TAR}" -C "/work/build/pack" "rocket-${GOOS}-${GOARCH}"
-	sha256sum "${TAR}" >"${TAR}.sha256"
-	echo "==> Wrote: ${TAR}"
+	if [[ "${GOOS}" != "windows" ]]; then
+		chmod +x "${OUTPUT_PATH}"
+	fi
+
+	sha256sum "${OUTPUT_PATH}" >"${OUTPUT_PATH}.sha256"
+	echo "==> Wrote: ${OUTPUT_PATH}"
 done
+
+echo "Packaging Router Configs"
+STAGE="/work/build/pack/rocket-router-data"
+
+mkdir -p "$STAGE"
+TAR="/out/${BIN_NAME}-router-package.tar.gz"
+if [[ -d "/work/resources" ]]; then cp -r "/work/resources" "${STAGE}/"; fi
+[[ -f "/work/LICENSE" ]] && cp "/work/LICENSE" "${STAGE}/"
+[[ -f "/work/README.md" ]] && cp "/work/README.md" "${STAGE}/"
+tar --sort=name --owner=0 --group=0 --numeric-owner --mtime='UTC 2020-01-01' \
+	-czf "${TAR}" -C "/work/build/pack" "rocket-router-data"
+echo "Packaged Router Configs"
 
 echo "==> All artifacts in /out:"
 ls -lh /out

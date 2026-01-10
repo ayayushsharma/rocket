@@ -14,7 +14,7 @@ concurrency:
 
 env:
   VERSION_TAG: ${{ github.ref_name }}
-  BIN_NAME: rocket-router
+  BIN_NAME: rocket
 
 jobs:
   build-and-release:
