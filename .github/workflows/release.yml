@@ -1,43 +1,29 @@
 name: Release
-
 on:
   push:
     tags:
-      - 'v*'  # e.g., v1.2.3
-  workflow_dispatch:  # allow manual triggering
+      - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   VERSION_TAG: ${{ github.ref_name }}
-  BIN_NAME: rocket
+  BIN_NAME: rocket-router
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      # Optional: Cache Go module downloads used during image build
-      - name: Cache Go mod (best-effort; speeds up image build if Docker reuses layers)
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: gomod-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-
-      - name: Set up Podman (container runtime)
-        uses: redhat-actions/podman-login@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
 
       - name: Build rocket-builder image
         run: |
@@ -61,6 +47,7 @@ jobs:
       - name: List artifacts
         run: ls -lh dist
 
+      # Create the release first
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
@@ -69,14 +56,23 @@ jobs:
           name: ${{ env.VERSION_TAG }}
           draft: false
           prerelease: false
+          # optional: generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload artifacts to Release
+      # Give the API a moment
+      - name: Wait for release indexing
+        run: sleep 10
+
+      # Upload assets and replace on re-run
+      - name: Upload assets
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.VERSION_TAG }}
           files: |
             dist/*.tar.gz
             dist/*.tar.gz.sha256
+          fail_on_unmatched_files: true
+          replace: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
