@@ -60,7 +60,7 @@ echo "==> Downloading Router $APP_ROUTER_PACKAGE"
 curl -LJO --progress-bar "https://github.com/$OWNERNAME/$REPONAME/releases/latest/download/${APP_ROUTER_PACKAGE_TAR}"
 
 echo "==> Extracting latest router package"
-tar -xvf "./${APP_ROUTER_PACKAGE_TAR}"
+tar -xf "./${APP_ROUTER_PACKAGE_TAR}"
 
 echo "==> Installing/Upgrading to latest router package"
 cp -r ./${APP_ROUTER_PACKAGE}/resources/* $APP_CONFIG_DIR
