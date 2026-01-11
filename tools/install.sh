@@ -38,20 +38,19 @@ APP_CONFIG_DIR="${HOME}/.config/${APP_NAME}/"
 
 # Removing preexiting files that collide with script downloads
 if [ -f "./${APP_BINARY}" ]; then
-    echo "=> Removing existing $APP_NAME binary > $APP_BINARY"
-    rm -r "./${APP_BINARY}"
+	echo "=> Removing existing $APP_NAME binary > $APP_BINARY"
+	rm -r "./${APP_BINARY}"
 fi
 
 if [ -f "./${APP_ROUTER_PACKAGE_TAR}" ]; then
-    echo "=> Removing existing package for router"
-    rm -r "./${APP_ROUTER_PACKAGE_TAR}"
+	echo "=> Removing existing package for router"
+	rm -r "./${APP_ROUTER_PACKAGE_TAR}"
 fi
 
 if [ -d "./${APP_ROUTER_PACKAGE}" ]; then
-    echo "=> Removing existing extract for router"
-    rm -r "./${APP_ROUTER_PACKAGE}"
+	echo "=> Removing existing extract for router"
+	rm -r "./${APP_ROUTER_PACKAGE}"
 fi
-
 
 echo "==> Downloading Binary $APP_BINARY"
 curl -LJO --progress-bar "https://github.com/$OWNERNAME/$REPONAME/releases/latest/download/${APP_BINARY}"
@@ -72,21 +71,20 @@ cp ./${APP_BINARY} "${HOME}/.local/bin/${APP_NAME}"
 echo "==> Syncing configurations"
 ./${APP_BINARY} sync
 
-
 echo "==> Cleaning Up"
 if [ -f "./${APP_BINARY}" ]; then
-    echo "=> Removing existing $APP_NAME binary > $APP_BINARY"
-    rm -r "./${APP_BINARY}"
+	echo "=> Removing existing $APP_NAME binary > $APP_BINARY"
+	rm -r "./${APP_BINARY}"
 fi
 
 if [ -f "./${APP_ROUTER_PACKAGE_TAR}" ]; then
-    echo "=> Removing existing package for router"
-    rm -r "./${APP_ROUTER_PACKAGE_TAR}"
+	echo "=> Removing existing package for router"
+	rm -r "./${APP_ROUTER_PACKAGE_TAR}"
 fi
 
 if [ -d "./${APP_ROUTER_PACKAGE}" ]; then
-    echo "=> Removing existing extract for router"
-    rm -r "./${APP_ROUTER_PACKAGE}"
+	echo "=> Removing existing extract for router"
+	rm -r "./${APP_ROUTER_PACKAGE}"
 fi
 
 echo

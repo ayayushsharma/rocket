@@ -44,15 +44,16 @@ type connectionEntryV1 struct {
 	ReadWrite bool   `json:"ReadWrite"`
 }
 
-func connectionsPath() (string, error) {
+func connectionsPath() (path string, err error) {
 	if p := os.Getenv("PODMAN_CONNECTIONS_CONF"); p != "" {
 		return p, nil
 	}
 
 	userConfigPath := constants.UserConfigDir
-	return filepath.Join(
+	path = filepath.Join(
 		userConfigPath, "containers", "podman-connections.json",
-	), nil
+	)
+	return
 }
 
 // loadDefaultConnection reads the file and returns (uri, identity).
@@ -308,7 +309,13 @@ func (conn PodManContext) ListNetworks() (networks []string, err error) {
 }
 
 func (conn PodManContext) CreateNetwork(networkName string) (err error) {
-	_, err = network.Create(conn, &nettypes.Network{Name: networkName})
+	_, err = network.Create(
+		conn, &nettypes.Network{
+			Name:       networkName,
+			Internal:   true,
+			DNSEnabled: true,
+		},
+	)
 	return err
 }
 
