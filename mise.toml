@@ -7,7 +7,7 @@ _.path = ["./build"]
 
 [tasks.build]
 description = "Build the project"
-run = "go build -o build/rocket-debug -tags=remote"
+run = "go build -o build/rocket -tags=remote"
 
 [tasks.prod]
 description = "Build project for end user"

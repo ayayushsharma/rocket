@@ -1,13 +1,16 @@
 package cmd
 
 import (
-	"ayayushsharma/rocket/constants"
 	"errors"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"log/slog"
 	"os"
 	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
+	"ayayushsharma/rocket/constants"
+	"ayayushsharma/rocket/resources"
 )
 
 var (
@@ -22,8 +25,18 @@ var rootCmd = &cobra.Command{
 		"track your data. Use open source versions of your beloved apps and host on\n" +
 		"your own machine.",
 
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		return initializeConfig(cmd)
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = initializeConfig(cmd)
+		if err != nil {
+			return
+		}
+
+		err = confimAppDataExists()
+		if err != nil {
+			return
+		}
+
+		return
 	},
 }
 
@@ -35,15 +48,6 @@ func Execute() {
 }
 
 func init() {
-	var programLevel slog.LevelVar
-	programLevel.Set(slog.LevelDebug)
-
-	handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-		Level: &programLevel,
-	})
-	logger := slog.New(handler)
-	slog.SetDefault(logger)
-
 	rootCmd.PersistentFlags().StringVar(
 		&cfgFile,
 		"config",
@@ -87,5 +91,16 @@ func initializeConfig(cmd *cobra.Command) error {
 	}
 
 	slog.Debug("Configuration initialized", "config", viper.ConfigFileUsed())
+	return nil
+}
+
+func confimAppDataExists() error {
+	if !resources.CheckAll() {
+		slog.Debug("App Data files not already present")
+		err := resources.SyncAll()
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

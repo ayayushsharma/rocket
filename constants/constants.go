@@ -13,6 +13,7 @@ const (
 )
 
 var (
+	AppStateDir       string
 	UserHomeDir       string
 	UserConfigDir     string
 	NginxConfPath     string
@@ -39,11 +40,15 @@ func init() {
 
 	UserHomeDir = userHomeDir
 	UserConfigDir = userConfigPath
-	NginxConfPath = filepath.Join(rocketConfig, "nginx/nginx.conf")
-	HomePageDir = filepath.Join(rocketConfig, "home-page")
+
+	AppStateDir = filepath.Join(rocketConfig, "state")
+
+	NginxConfPath = filepath.Join(AppStateDir, "nginx/nginx.conf")
+	HomePageDir = filepath.Join(AppStateDir, "home-page")
 	RoutesJson = filepath.Join(HomePageDir, "static/application.json")
-	WorkspaceAppsJson = filepath.Join(rocketConfig, "workspace.rockets.json")
-	RegistriesPath = filepath.Join(rocketConfig, "registries")
+
+	WorkspaceAppsJson = filepath.Join(AppStateDir, "workspace.rockets.json")
+	RegistriesPath = filepath.Join(AppStateDir, "registries")
 
 	slog.Debug(
 		"Default state paths",
