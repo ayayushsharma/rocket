@@ -132,17 +132,5 @@ for row in "${TARGETS[@]}"; do
 	echo "==> Wrote: ${OUTPUT_PATH}"
 done
 
-echo "==> Packaging Router Configs"
-STAGE="/work/build/pack/rocket-router-package"
-
-mkdir -p "$STAGE"
-TAR="/out/${BIN_NAME}-router-package.tar.gz"
-if [[ -d "/work/resources" ]]; then cp -r "/work/resources" "${STAGE}/"; fi
-[[ -f "/work/LICENSE" ]] && cp "/work/LICENSE" "${STAGE}/"
-[[ -f "/work/README.md" ]] && cp "/work/README.md" "${STAGE}/"
-tar --sort=name --owner=0 --group=0 --numeric-owner --mtime='UTC 2020-01-01' \
-	-czf "${TAR}" -C "/work/build/pack" "rocket-router-package"
-sha256sum "${TAR}" >"${TAR}.sha256"
-
 echo "==> All artifacts in /out:"
 ls -lh /out
