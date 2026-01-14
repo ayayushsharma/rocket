@@ -35,20 +35,20 @@ func init() {
 		userConfigPath = filepath.Join(userHomeDir, ".config")
 	}
 
-	rocketConfig := filepath.Join(userConfigPath, ApplicationName)
-	slog.Debug("Default Config Dir", "path", rocketConfig)
+	rocketConfigDir := filepath.Join(userConfigPath, ApplicationName)
+	slog.Debug("Default Config Dir", "path", rocketConfigDir)
 
 	UserHomeDir = userHomeDir
 	UserConfigDir = userConfigPath
 
-	AppStateDir = filepath.Join(rocketConfig, "state")
+	AppStateDir = filepath.Join(rocketConfigDir, "state")
 
 	NginxConfPath = filepath.Join(AppStateDir, "nginx/nginx.conf")
 	HomePageDir = filepath.Join(AppStateDir, "home-page")
 	RoutesJson = filepath.Join(HomePageDir, "static/application.json")
 
-	WorkspaceAppsJson = filepath.Join(AppStateDir, "workspace.rockets.json")
-	RegistriesPath = filepath.Join(AppStateDir, "registries")
+	WorkspaceAppsJson = filepath.Join(rocketConfigDir, "workspace.rockets.json")
+	RegistriesPath = filepath.Join(rocketConfigDir, "registries")
 
 	slog.Debug(
 		"Default state paths",
