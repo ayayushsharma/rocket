@@ -56,6 +56,14 @@ if [ -f "./${APP_BINARY}" ]; then
 	rm -r "./${APP_BINARY}"
 fi
 
+if [ ":$PATH:" = *":$HOME/.local/bin:"* ]; then
+    echo "$HOME/.local/bin is in the PATH."
+else
+    echo "$HOME/.local/bin is not in the PATH."
+    echo "Add it to your PATH by adding the following line to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
+    echo 'export PATH="$HOME/.local/bin:$PATH"'
+fi
+
 echo
 
 echo "Ensure you have podman installed and a podman machine running if you are not on linux"

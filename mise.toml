@@ -16,3 +16,7 @@ run = "go build -o ~/bin/rocket -tags=remote,production -ldflags '-s -w'"
 [tasks.format]
 description = "Format codebase"
 run = "gofmt -w . && shfmt -w ."
+
+[tasks.clean-binary]
+description = "Format codebase"
+run = "rm ~/bin/rocket || rm ./build/rocket || true"
