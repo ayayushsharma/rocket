@@ -10,11 +10,11 @@ import (
 	"ayayushsharma/rocket/containers"
 )
 
-var startCmd = &cobra.Command{
-	Use:   "start",
-	Short: "Starts Rocket",
+var startRouterCmd = &cobra.Command{
+	Use:   "start-router",
+	Short: "Starts Rocket routers",
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		slog.Debug("Launching... " + constants.ApplicationName)
+		slog.Debug("Starting rocket router... ")
 		var conn containers.ContainerManager
 		conn, err = containers.Manager()
 		if err != nil {
@@ -28,7 +28,7 @@ var startCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(startCmd)
+	rootCmd.AddCommand(startRouterCmd)
 }
 
 func startRouter(conn containers.ContainerManager) (err error) {

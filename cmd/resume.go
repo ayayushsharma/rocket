@@ -11,7 +11,7 @@ import (
 
 var resumeCmd = &cobra.Command{
 	Use:   "resume",
-	Short: "Starts Rocket",
+	Short: "Resume rockets from where they left off",
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		slog.Debug("Resuming... " + constants.ApplicationName)
 		conn, err := containers.Manager()

@@ -32,8 +32,6 @@ else
 fi
 
 APP_BINARY="${APP_NAME}-${APP_OS}-${APP_ARCH}"
-APP_ROUTER_PACKAGE="${APP_NAME}-router-package"
-APP_ROUTER_PACKAGE_TAR="${APP_ROUTER_PACKAGE}.tar.gz"
 APP_CONFIG_DIR="${HOME}/.config/${APP_NAME}/"
 
 # Removing preexiting files that collide with script downloads
@@ -42,27 +40,8 @@ if [ -f "./${APP_BINARY}" ]; then
 	rm -r "./${APP_BINARY}"
 fi
 
-if [ -f "./${APP_ROUTER_PACKAGE_TAR}" ]; then
-	echo "=> Removing existing package for router"
-	rm -r "./${APP_ROUTER_PACKAGE_TAR}"
-fi
-
-if [ -d "./${APP_ROUTER_PACKAGE}" ]; then
-	echo "=> Removing existing extract for router"
-	rm -r "./${APP_ROUTER_PACKAGE}"
-fi
-
 echo "==> Downloading Binary $APP_BINARY"
 curl -LJO --progress-bar "https://github.com/$OWNERNAME/$REPONAME/releases/latest/download/${APP_BINARY}"
-
-echo "==> Downloading Router $APP_ROUTER_PACKAGE"
-curl -LJO --progress-bar "https://github.com/$OWNERNAME/$REPONAME/releases/latest/download/${APP_ROUTER_PACKAGE_TAR}"
-
-echo "==> Extracting latest router package"
-tar -xf "./${APP_ROUTER_PACKAGE_TAR}"
-
-echo "==> Installing/Upgrading to latest router package"
-cp -r ./${APP_ROUTER_PACKAGE}/resources/* $APP_CONFIG_DIR
 
 echo "==> Installing/Upgrading $APP_NAME"
 chmod +x ./${APP_BINARY}
@@ -77,14 +56,12 @@ if [ -f "./${APP_BINARY}" ]; then
 	rm -r "./${APP_BINARY}"
 fi
 
-if [ -f "./${APP_ROUTER_PACKAGE_TAR}" ]; then
-	echo "=> Removing existing package for router"
-	rm -r "./${APP_ROUTER_PACKAGE_TAR}"
-fi
-
-if [ -d "./${APP_ROUTER_PACKAGE}" ]; then
-	echo "=> Removing existing extract for router"
-	rm -r "./${APP_ROUTER_PACKAGE}"
+if [ ":$PATH:" = *":$HOME/.local/bin:"* ]; then
+    echo "$HOME/.local/bin is in the PATH."
+else
+    echo "$HOME/.local/bin is not in the PATH."
+    echo "Add it to your PATH by adding the following line to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
+    echo 'export PATH="$HOME/.local/bin:$PATH"'
 fi
 
 echo

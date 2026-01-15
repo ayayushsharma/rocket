@@ -13,8 +13,7 @@ import (
 
 var stopCmd = &cobra.Command{
 	Use:   "stop [container_name]",
-	Short: "Stops applications",
-	// Args:  cobra.MinimumNArgs(1),
+	Short: "Stops rocket applications",
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		var conn containers.ContainerManager
 		conn, err = containers.Manager()

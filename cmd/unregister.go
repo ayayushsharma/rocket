@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"ayayushsharma/rocket/common"
 	"ayayushsharma/rocket/constants"
 	"ayayushsharma/rocket/containers"
 	"ayayushsharma/rocket/workspace"
@@ -23,7 +24,7 @@ var unregisterCmd = &cobra.Command{
 			return
 		}
 		containerName := args[0]
-		err = unregisterApplication(conn, containerName)
+		err = unregisterApplication(conn, common.CompleteAppName(containerName))
 		if err != nil {
 			slog.Debug("Failed to unregister application", "error", err)
 			return
@@ -31,6 +32,7 @@ var unregisterCmd = &cobra.Command{
 
 		return nil
 	},
+	ValidArgsFunction: unregisterAppCompletionFn,
 }
 
 func init() {
@@ -67,4 +69,38 @@ func unregisterApplication(
 	}
 
 	return nil
+}
+
+func unregisterAppCompletionFn(_ *cobra.Command, _ []string, toComplete string) (
+	completion []cobra.Completion,
+	shellDirective cobra.ShellCompDirective,
+) {
+	shellDirective = cobra.ShellCompDirectiveNoFileComp
+
+	workspaceApps, err := workspace.GetApps()
+	if err != nil {
+		return
+	}
+
+	registeredAppNames := []string{}
+
+	for runningApp := range workspaceApps {
+		if _, ok := workspaceApps[runningApp]; ok {
+			registeredAppNames = append(
+				registeredAppNames, common.ShortenAppName(runningApp),
+			)
+		}
+	}
+
+	if len(toComplete) == 0 {
+		return registeredAppNames, shellDirective
+	}
+
+	for _, rocketApp := range registeredAppNames {
+		if toComplete == rocketApp[:len(toComplete)] {
+			completion = append(completion, rocketApp)
+		}
+	}
+
+	return
 }

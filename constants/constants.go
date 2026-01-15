@@ -12,7 +12,10 @@ const (
 	RouterContainer = "rocket-nginx-router"
 )
 
+var appVersion string
+
 var (
+	AppStateDir       string
 	UserHomeDir       string
 	UserConfigDir     string
 	NginxConfPath     string
@@ -34,16 +37,20 @@ func init() {
 		userConfigPath = filepath.Join(userHomeDir, ".config")
 	}
 
-	rocketConfig := filepath.Join(userConfigPath, ApplicationName)
-	slog.Debug("Default Config Dir", "path", rocketConfig)
+	rocketConfigDir := filepath.Join(userConfigPath, ApplicationName)
+	slog.Debug("Default Config Dir", "path", rocketConfigDir)
 
 	UserHomeDir = userHomeDir
 	UserConfigDir = userConfigPath
-	NginxConfPath = filepath.Join(rocketConfig, "nginx/nginx.conf")
-	HomePageDir = filepath.Join(rocketConfig, "home-page")
+
+	AppStateDir = filepath.Join(rocketConfigDir, "state")
+
+	NginxConfPath = filepath.Join(AppStateDir, "nginx/nginx.conf")
+	HomePageDir = filepath.Join(AppStateDir, "home-page")
 	RoutesJson = filepath.Join(HomePageDir, "static/application.json")
-	WorkspaceAppsJson = filepath.Join(rocketConfig, "workspace.rockets.json")
-	RegistriesPath = filepath.Join(rocketConfig, "registries")
+
+	WorkspaceAppsJson = filepath.Join(rocketConfigDir, "workspace.rockets.json")
+	RegistriesPath = filepath.Join(rocketConfigDir, "registries")
 
 	slog.Debug(
 		"Default state paths",
@@ -53,4 +60,11 @@ func init() {
 		"registered_apps", WorkspaceAppsJson,
 		"registries", RegistriesPath,
 	)
+}
+
+func GetVersion() string {
+	if appVersion == "" {
+		return "devel"
+	}
+	return appVersion
 }

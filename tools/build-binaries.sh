@@ -84,7 +84,7 @@ for row in "${TARGETS[@]}"; do
 	export GOOS GOARCH CGO_ENABLED="${CGO}"
 
 	# Per-target build tags
-	BUILD_TAGS="remote"
+	BUILD_TAGS="remote,production"
 	if [[ "${CGO}" == "0" ]]; then
 		# Pure-Go: force containers/image to use pure-Go OpenPGP verifier (no GPGME)
 		BUILD_TAGS="${BUILD_TAGS},containers_image_openpgp"
@@ -114,7 +114,7 @@ for row in "${TARGETS[@]}"; do
 	: "${OUT_BIN:?internal: OUT_BIN empty}"
 
 	go build -trimpath -tags="${BUILD_TAGS}" \
-		-ldflags "-s -w -X main.version=${TAG}" \
+		-ldflags "-s -w -X ayayushsharma/rocket/constants.appVersion=${TAG}" \
 		-o "${OUT_BIN}" "${PKG_PATH}"
 
 	OUTPUT_PATH="/out/${BIN_NAME}-${GOOS}-${GOARCH}"
@@ -131,18 +131,6 @@ for row in "${TARGETS[@]}"; do
 	sha256sum "${OUTPUT_PATH}" >"${OUTPUT_PATH}.sha256"
 	echo "==> Wrote: ${OUTPUT_PATH}"
 done
-
-echo "==> Packaging Router Configs"
-STAGE="/work/build/pack/rocket-router-package"
-
-mkdir -p "$STAGE"
-TAR="/out/${BIN_NAME}-router-package.tar.gz"
-if [[ -d "/work/resources" ]]; then cp -r "/work/resources" "${STAGE}/"; fi
-[[ -f "/work/LICENSE" ]] && cp "/work/LICENSE" "${STAGE}/"
-[[ -f "/work/README.md" ]] && cp "/work/README.md" "${STAGE}/"
-tar --sort=name --owner=0 --group=0 --numeric-owner --mtime='UTC 2020-01-01' \
-	-czf "${TAR}" -C "/work/build/pack" "rocket-router-package"
-sha256sum "${TAR}" >"${TAR}.sha256"
 
 echo "==> All artifacts in /out:"
 ls -lh /out
