@@ -33,6 +33,20 @@ type appFromRegistry struct {
 func GetAll() (registries []string, err error) {
 	registriesFile := constants.RegistriesPath
 
+	exists, err := os.Stat(registriesFile)
+	if os.IsNotExist(err) || exists.IsDir() {
+		// create the file with default fzfData
+		err = os.WriteFile(
+			registriesFile,
+			[]byte(DefaultRegistriesData),
+			0644,
+		)
+		if err != nil {
+			return nil, err
+		}
+		slog.Debug("Created default registries file", "path", registriesFile)
+	}
+
 	data, err := os.ReadFile(registriesFile)
 	if err != nil {
 		return nil, err
