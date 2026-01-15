@@ -10,7 +10,7 @@ import (
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Prints version of the CLI",
+	Short: "Prints version",
 
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(constants.GetVersion())

@@ -16,7 +16,7 @@ import (
 
 var launchCmd = &cobra.Command{
 	Use:   "launch",
-	Short: "Launches specified application",
+	Short: "Launch locally registered application",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		conn, err := containers.Manager()

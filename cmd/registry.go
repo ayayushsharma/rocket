@@ -1,3 +1,4 @@
+//go:build !production
 package cmd
 
 import (
@@ -11,10 +12,10 @@ import (
 
 var registryCmd = &cobra.Command{
 	Use:   "registry",
-	Short: "registrys specified containerised application",
+	Short: "Manages online registry for Rockets !TODO",
 
 	Run: func(cmd *cobra.Command, args []string) {
-		slog.Debug("Launching... " + constants.ApplicationName)
+		slog.Debug("Adding to registry... " + constants.ApplicationName)
 		_, err := containers.Manager()
 		if err != nil {
 

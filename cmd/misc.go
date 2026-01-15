@@ -1,21 +1,23 @@
+//go:build !production
 package cmd
 
 import (
-	"ayayushsharma/rocket/constants"
-	"ayayushsharma/rocket/containers"
-	"ayayushsharma/rocket/registry"
 	"fmt"
 	"log/slog"
 
 	"github.com/spf13/cobra"
+
+	"ayayushsharma/rocket/constants"
+	"ayayushsharma/rocket/containers"
+	"ayayushsharma/rocket/registry"
 )
 
 var miscCmd = &cobra.Command{
 	Use:   "misc",
-	Short: "Launches specified application",
+	Short: "Runs miscellaneous tasks under development",
 
 	Run: func(cmd *cobra.Command, args []string) {
-		slog.Debug("Launching... " + constants.ApplicationName)
+		slog.Debug("Misc... " + constants.ApplicationName)
 		conn, err := containers.Manager()
 		if err != nil {
 

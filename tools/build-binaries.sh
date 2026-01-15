@@ -84,7 +84,7 @@ for row in "${TARGETS[@]}"; do
 	export GOOS GOARCH CGO_ENABLED="${CGO}"
 
 	# Per-target build tags
-	BUILD_TAGS="remote"
+	BUILD_TAGS="remote,production"
 	if [[ "${CGO}" == "0" ]]; then
 		# Pure-Go: force containers/image to use pure-Go OpenPGP verifier (no GPGME)
 		BUILD_TAGS="${BUILD_TAGS},containers_image_openpgp"

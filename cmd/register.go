@@ -15,7 +15,7 @@ import (
 
 var registerCmd = &cobra.Command{
 	Use:   "register",
-	Short: "registers specified containerised application",
+	Short: "Registers containerised application from selection menu",
 
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		slog.Debug("Registering... " + constants.ApplicationName)
