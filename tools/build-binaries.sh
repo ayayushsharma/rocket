@@ -114,7 +114,7 @@ for row in "${TARGETS[@]}"; do
 	: "${OUT_BIN:?internal: OUT_BIN empty}"
 
 	go build -trimpath -tags="${BUILD_TAGS}" \
-		-ldflags "-s -w -X main.version=${TAG}" \
+		-ldflags "-s -w -X ayayushsharma/rocket/constants.appVersion=${TAG}" \
 		-o "${OUT_BIN}" "${PKG_PATH}"
 
 	OUTPUT_PATH="/out/${BIN_NAME}-${GOOS}-${GOARCH}"

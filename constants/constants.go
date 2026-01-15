@@ -12,6 +12,8 @@ const (
 	RouterContainer = "rocket-nginx-router"
 )
 
+var appVersion string
+
 var (
 	AppStateDir       string
 	UserHomeDir       string
@@ -58,4 +60,11 @@ func init() {
 		"registered_apps", WorkspaceAppsJson,
 		"registries", RegistriesPath,
 	)
+}
+
+func GetVersion() string {
+	if appVersion == "" {
+		return "devel"
+	}
+	return appVersion
 }
