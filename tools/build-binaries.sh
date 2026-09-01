@@ -5,11 +5,17 @@ set -euo pipefail
 #   build-all.sh --bin rocket --pkg ./cmd/rocket --tag v1.2.3
 #
 # Notes:
+# - All targets build with CGO=0 (static binaries) for portability: the
+#   resulting Linux binary is fully static and runs on any machine regardless
+#   of glibc version or shared deps. CGO=1 would produce a dynamically-linked
+#   binary tied to the build container's libc (it failed to run on other
+#   Linux hosts).
 # - Pure-Go targets (CGO=0) build with tags: "remote,containers_image_openpgp"
-#   to avoid GPGME/cgo entirely.
-# - linux/amd64 can be built with CGO=1 to keep full signing/GPGME features.
-# - If your code directly imports github.com/proglottis/gpgme,
-#   guard those files with //go:build cgo and provide !cgo stubs.
+#   to use the pure-Go OpenPGP verifier instead of GPGME/cgo.
+# - If you want full signing/GPGME features, override TARGETS to use CGO=1 and
+#   accept a non-portable, dynamically-linked binary. Code importing
+#   github.com/proglottis/gpgme must guard those files with //go:build cgo
+#   and provide !cgo stubs.
 
 BIN_NAME=""
 PKG_PATH=""
@@ -60,7 +66,7 @@ go mod download
 # Default build matrix.
 # Override by exporting TARGETS (same "GOOS GOARCH CGO" per line) if needed.
 read -r -d '' DEFAULT_TARGETS <<'EOS' || true
-linux amd64 1
+linux amd64 0
 darwin arm64 0
 windows amd64 0
 EOS
